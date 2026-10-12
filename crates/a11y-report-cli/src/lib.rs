@@ -112,13 +112,18 @@ pub fn write_outputs(
     }
     if formats.ai {
         let ai_dir = out_dir.join("ai");
-        // Remove briefs of screens that no longer exist.
+        // Remove our own briefs of screens that no longer exist (never hand-written files).
         if ai_dir.is_dir()
             && let Ok(entries) = fs::read_dir(&ai_dir)
         {
             for e in entries.filter_map(Result::ok) {
-                if e.path().extension().is_some_and(|x| x == "md") {
-                    let _ = fs::remove_file(e.path());
+                let path = e.path();
+                let generated = path.extension().is_some_and(|x| x == "md")
+                    && fs::read_to_string(&path).is_ok_and(|t| {
+                        t.starts_with(a11y_report_render::markdown::GENERATED_MARKER)
+                    });
+                if generated {
+                    let _ = fs::remove_file(&path);
                 }
             }
         }
@@ -171,7 +176,7 @@ pub fn summary_lines(report: &Report, main: &Path, lang: Lang) -> [String; 3] {
     if let Some(d) = &s.diff
         && let (Some(now), Some(before)) = (s.automatic_conformity_rate, d.baseline_rate)
     {
-        let pts = ((now - before) * 100.0).round();
+        let pts = i18n::points_delta(now, before);
         rate.push_str(&format!(
             " ({}{} {} {})",
             if pts > 0.0 { "+" } else { "" },

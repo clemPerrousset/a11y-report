@@ -121,3 +121,29 @@ Choices made without explicit validation, as required by the specification
 
 No dependency outside the spec's list was added. Release automation uses GitHub Actions only;
 install scripts are plain shell/PowerShell.
+
+## 2026-10-12 — Contrast: background from the whole zone, frames peeled off
+
+- **Context**: review found that with the spec's "2 px ring" a 2–3 px outline (outlined buttons,
+  text fields, chips) is taken as the background, the real background as the text, and the ink
+  height becomes the full height (false or hidden failures).
+- **Choice**: the background is the dominant bucket of the whole zone; edge rows/columns with
+  ≥ 90 % contrasting pixels are peeled off as a frame (text never fills a whole line); the
+  uniformity ring (busy-background test) and the text candidates are taken inside that frame.
+- **Rejected**: a fixed deeper ring (cuts text in tight TextViews).
+
+## 2026-10-12 — Diff: "fixed" only when the rule really ran again
+
+- A baseline finding is `fixed` only if its screen was analysed **and** its rule ran on that screen
+  (enabled, and not "not verified" for lack of a screenshot); otherwise it is `not_rechecked`.
+- Findings carried as `not_rechecked` by the baseline are tracked: when their screen comes back
+  they become `existing` (still there) or `fixed`.
+
+## 2026-10-12 — Hardening of untrusted inputs
+
+- XML nested deeper than 256 levels is rejected before parsing (the parser recurses per level).
+- `run.json` paths must be relative to the run folder, without `..` or drive/root prefixes.
+- Application ids must look like `com.example.app` before reaching `adb shell`.
+- Screen names `readme`, `con`, `prn`, `aux`, `nul`, `com1-9`, `lpt1-9` are reserved.
+- A fresh capture session deletes only the files listed in a valid previous `run.json`; briefs in
+  `ai/` are replaced only if they carry the generated-file marker.

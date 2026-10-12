@@ -33,10 +33,11 @@ pub fn evaluate_criteria(
                 CriterionStatus::Manual
             } else if !screens_failed.is_empty() {
                 CriterionStatus::Fail
+            } else if unverified.contains(c.id) {
+                // Some screens could not be checked: never claim a pass.
+                CriterionStatus::Manual
             } else if applicable.contains(c.id) {
                 CriterionStatus::Pass
-            } else if unverified.contains(c.id) {
-                CriterionStatus::Manual
             } else {
                 CriterionStatus::NotApplicable
             };

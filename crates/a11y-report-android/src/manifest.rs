@@ -73,14 +73,42 @@ pub enum ManifestError {
     DuplicateScreen(String),
     #[error("run.json lists no screens")]
     NoScreens,
+    #[error(
+        "screen \"{screen}\": path \"{path}\" must be relative to the run folder, without \"..\""
+    )]
+    PathOutsideRun { screen: String, path: String },
 }
 
-/// `[a-z0-9_-]+`.
+/// Names that clash with `ai/README.md` on case-insensitive file systems, or that are
+/// reserved device names on Windows.
+pub fn is_reserved_screen_name(name: &str) -> bool {
+    const RESERVED: [&str; 5] = ["readme", "con", "prn", "aux", "nul"];
+    let numbered = |prefix: &str| {
+        name.strip_prefix(prefix)
+            .is_some_and(|d| d.len() == 1 && d.as_bytes()[0].is_ascii_digit())
+    };
+    RESERVED.contains(&name) || numbered("com") || numbered("lpt")
+}
+
+/// `[a-z0-9_-]+`, not reserved.
 pub fn is_valid_screen_name(name: &str) -> bool {
     !name.is_empty()
         && name
             .bytes()
             .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_' || b == b'-')
+        && !is_reserved_screen_name(name)
+}
+
+/// Relative path without `..`, root or drive prefix.
+fn is_confined(path: &str) -> bool {
+    use std::path::Component;
+    !path.is_empty()
+        && !path.starts_with('/')
+        && !path.starts_with('\\')
+        && !path.contains(':')
+        && std::path::Path::new(path)
+            .components()
+            .all(|c| matches!(c, Component::Normal(_) | Component::CurDir))
 }
 
 impl RunManifest {
@@ -111,6 +139,14 @@ impl RunManifest {
             }
             if !names.insert(s.name.as_str()) {
                 return Err(ManifestError::DuplicateScreen(s.name.clone()));
+            }
+            for path in std::iter::once(&s.hierarchy).chain(s.screenshot.as_ref()) {
+                if !is_confined(path) {
+                    return Err(ManifestError::PathOutsideRun {
+                        screen: s.name.clone(),
+                        path: path.clone(),
+                    });
+                }
             }
         }
         Ok(())
@@ -211,6 +247,21 @@ mod tests {
             RunManifest::parse("{"),
             Err(ManifestError::Json(_))
         ));
+        for bad in [
+            "../secret.xml",
+            "/etc/passwd",
+            "C:/x.xml",
+            "screens/../../x.xml",
+        ] {
+            let escaped = RUN.replace("screens/home.xml", bad);
+            assert!(
+                matches!(
+                    RunManifest::parse(&escaped),
+                    Err(ManifestError::PathOutsideRun { .. })
+                ),
+                "{bad}"
+            );
+        }
     }
 
     #[test]
@@ -219,6 +270,9 @@ mod tests {
         assert!(!is_valid_screen_name(""));
         assert!(!is_valid_screen_name("Feed"));
         assert!(!is_valid_screen_name("a/b"));
+        assert!(!is_valid_screen_name("readme"));
+        assert!(!is_valid_screen_name("com1"));
+        assert!(is_valid_screen_name("com10") && is_valid_screen_name("console"));
     }
 
     #[test]

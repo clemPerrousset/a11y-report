@@ -2,12 +2,14 @@
 //!
 //! Inside the node bounds shrunk by 1 px:
 //! 1. pixels are quantized to 5 bits per channel;
-//! 2. the background is the dominant bucket of the 2 px border ring (mean of its real pixels);
-//! 3. if that bucket covers less than 60 % of the ring, the background is busy (image,
-//!    gradient): the finding is `info` with low confidence;
-//! 4. text candidates are pixels with a contrast of at least 1.5 against the background;
-//!    fewer than 20 pixels or 0.5 % of the zone means no text was detected;
-//! 5. the text colour is the dominant bucket among candidates (anti-aliasing spreads over
+//! 2. the background is the dominant bucket of the zone (mean of its real pixels);
+//! 3. edge rows/columns made of ≥ 90 % contrasting pixels are a frame (outlined button,
+//!    text field stroke) and are peeled off: text never fills a whole line;
+//! 4. if the background bucket covers less than 60 % of the 2 px ring inside the frame, the
+//!    background is busy (image, gradient): the finding is `info` with low confidence;
+//! 5. text candidates are pixels inside the frame with a contrast of at least 1.5 against
+//!    the background; fewer than 20 pixels or 0.5 % of the area means no text was detected;
+//! 6. the text colour is the dominant bucket among candidates (anti-aliasing spreads over
 //!    many buckets, the glyph bodies dominate).
 
 use crate::color::{
@@ -33,6 +35,8 @@ static META: RuleMeta = RuleMeta {
 
 const MIN_AREA_PX: i64 = 64;
 const RING_PX: i32 = 2;
+/// Share of contrasting pixels above which an edge row or column is a border, not text.
+const FRAME_LINE_SHARE: f64 = 0.9;
 const UNIFORMITY_MIN: f64 = 0.6;
 const CANDIDATE_MIN_RATIO: f64 = 1.5;
 const MIN_TEXT_PIXELS: usize = 20;
@@ -97,33 +101,22 @@ pub fn measure(image: &Image, zone: Rect) -> Option<Measure> {
     if zone.width() <= RING_PX * 2 || zone.height() <= RING_PX * 2 {
         return None;
     }
-    let (x1, y1, x2, y2) = (
-        zone.x1 as u32,
-        zone.y1 as u32,
-        zone.x2 as u32,
-        zone.y2 as u32,
-    );
-    let ring = RING_PX as u32;
-    let in_ring =
-        |x: u32, y: u32| x < x1 + ring || x >= x2 - ring || y < y1 + ring || y >= y2 - ring;
+    let (x1, y1) = (zone.x1 as u32, zone.y1 as u32);
+    let (w, h) = (zone.width() as usize, zone.height() as usize);
+    let px = |x: usize, y: usize| image.pixel(x1 + x as u32, y1 + y as u32);
 
-    // Background: dominant bucket of the border ring.
-    let mut ring_buckets = Vec::new();
-    for y in y1..y2 {
-        for x in x1..x2 {
-            if in_ring(x, y) {
-                ring_buckets.push(bucket(image.pixel(x, y)));
-            }
-        }
-    }
-    let ring_total = ring_buckets.len();
-    let (bg_bucket, bg_count) = dominant(&mut ring_buckets)?;
+    // 1. Background: dominant bucket of the whole zone (text is a minority of the pixels).
+    let mut all: Vec<u16> = (0..h)
+        .flat_map(|y| (0..w).map(move |x| (x, y)))
+        .map(|(x, y)| bucket(px(x, y)))
+        .collect();
+    let (bg_bucket, _) = dominant(&mut all)?;
     let mut sum = [0u64; 3];
     let mut n = 0u64;
-    for y in y1..y2 {
-        for x in x1..x2 {
-            let p = image.pixel(x, y);
-            if in_ring(x, y) && bucket(p) == bg_bucket {
+    for y in 0..h {
+        for x in 0..w {
+            let p = px(x, y);
+            if bucket(p) == bg_bucket {
                 for (s, v) in sum.iter_mut().zip(p) {
                     *s += u64::from(v);
                 }
@@ -134,34 +127,79 @@ pub fn measure(image: &Image, zone: Rect) -> Option<Measure> {
     let bg = mean_color(sum, n);
     let bg_lum = luminance(bg);
 
-    // Text candidates.
-    let height = (y2 - y1) as usize;
-    let mut rows = vec![false; height];
-    let mut candidates = Vec::new();
-    for y in y1..y2 {
-        for x in x1..x2 {
-            let p = image.pixel(x, y);
+    // 2. Pixels contrasting with the background.
+    let mut mask = vec![false; w * h];
+    let mut row_count = vec![0usize; h];
+    let mut col_count = vec![0usize; w];
+    for y in 0..h {
+        for x in 0..w {
+            let p = px(x, y);
             if ratio_from_luminance(luminance_rgb(p[0], p[1], p[2]), bg_lum) >= CANDIDATE_MIN_RATIO
             {
-                candidates.push(bucket(p));
-                rows[(y - y1) as usize] = true;
+                mask[y * w + x] = true;
+                row_count[y] += 1;
+                col_count[x] += 1;
             }
         }
     }
-    let area = zone.area() as f64;
+
+    // 3. Frame: borders and strokes along the edges are full lines of contrasting pixels,
+    //    which text never is. Peel them off before looking at the text.
+    let full_row = |y: usize| row_count[y] as f64 >= FRAME_LINE_SHARE * w as f64;
+    let full_col = |x: usize| col_count[x] as f64 >= FRAME_LINE_SHARE * h as f64;
+    let peel = |len: usize, full: &dyn Fn(usize) -> bool, rev: bool| {
+        (0..len / 4)
+            .take_while(|&i| full(if rev { len - 1 - i } else { i }))
+            .count()
+    };
+    let top = peel(h, &full_row, false);
+    let bottom = peel(h, &full_row, true);
+    let left = peel(w, &full_col, false);
+    let right = peel(w, &full_col, true);
+    let (ix1, iy1, ix2, iy2) = (left, top, w - right, h - bottom);
+    let ring = RING_PX as usize;
+    if ix2 - ix1 <= ring * 2 || iy2 - iy1 <= ring * 2 {
+        return None;
+    }
+
+    // 4. Uniformity: share of the background bucket in the 2 px ring inside the frame.
+    let in_ring =
+        |x: usize, y: usize| x < ix1 + ring || x >= ix2 - ring || y < iy1 + ring || y >= iy2 - ring;
+    let mut ring_total = 0usize;
+    let mut ring_bg = 0usize;
+    for y in iy1..iy2 {
+        for x in ix1..ix2 {
+            if in_ring(x, y) {
+                ring_total += 1;
+                if bucket(px(x, y)) == bg_bucket {
+                    ring_bg += 1;
+                }
+            }
+        }
+    }
+
+    // 5. Text: dominant bucket among the candidates inside the frame.
+    let mut rows = vec![false; h];
+    let mut candidates = Vec::new();
+    for y in iy1..iy2 {
+        for x in ix1..ix2 {
+            if mask[y * w + x] {
+                candidates.push(bucket(px(x, y)));
+                rows[y] = true;
+            }
+        }
+    }
+    let area = ((ix2 - ix1) * (iy2 - iy1)) as f64;
     if candidates.len() < MIN_TEXT_PIXELS || (candidates.len() as f64) < area * MIN_TEXT_SHARE {
         return None;
     }
     let (fg_bucket, _) = dominant(&mut candidates)?;
     let mut sum = [0u64; 3];
     let mut n = 0u64;
-    for y in y1..y2 {
-        for x in x1..x2 {
-            let p = image.pixel(x, y);
-            if bucket(p) == fg_bucket
-                && ratio_from_luminance(luminance_rgb(p[0], p[1], p[2]), bg_lum)
-                    >= CANDIDATE_MIN_RATIO
-            {
+    for y in iy1..iy2 {
+        for x in ix1..ix2 {
+            let p = px(x, y);
+            if mask[y * w + x] && bucket(p) == fg_bucket {
                 for (s, v) in sum.iter_mut().zip(p) {
                     *s += u64::from(v);
                 }
@@ -193,7 +231,11 @@ pub fn measure(image: &Image, zone: Rect) -> Option<Measure> {
         fg,
         bg,
         ratio: contrast_ratio(fg, bg),
-        uniformity: bg_count as f64 / ring_total as f64,
+        uniformity: if ring_total == 0 {
+            1.0
+        } else {
+            ring_bg as f64 / ring_total as f64
+        },
         ink_height_px,
     })
 }
@@ -296,6 +338,27 @@ mod tests {
         assert_eq!(floor2(m.ratio), 4.47);
         assert_eq!(m.uniformity, 1.0);
         assert_eq!(m.ink_height_px, 12.0);
+    }
+
+    #[test]
+    fn outlined_zone_ignores_the_border() {
+        for border in [1, 2, 3, 6] {
+            let mut img = canvas(300, 80, [255, 255, 255]);
+            fill(&mut img, Rect::new(0, 0, 300, 80), [0xBB, 0xBB, 0xBB]);
+            fill(
+                &mut img,
+                Rect::new(border, border, 300 - border, 80 - border),
+                [255, 255, 255],
+            );
+            for x in (30..270).step_by(6) {
+                fill(&mut img, Rect::new(x, 34, x + 3, 46), [0x77, 0x77, 0x77]);
+            }
+            let m = measure(&img, Rect::new(0, 0, 300, 80)).expect("text detected");
+            assert_eq!(m.bg, Rgb::new(255, 255, 255), "border {border}");
+            assert_eq!(m.fg, Rgb::new(0x77, 0x77, 0x77), "border {border}");
+            assert_eq!(m.ink_height_px, 12.0, "border {border}");
+            assert_eq!(m.uniformity, 1.0, "border {border}");
+        }
     }
 
     #[test]

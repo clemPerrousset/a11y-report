@@ -252,12 +252,22 @@ pub fn criterion_status(s: CriterionStatus, lang: Lang) -> &'static str {
 
 /// Up to 2 decimals, trailing zeros removed, decimal comma in French.
 pub fn number(x: f64, lang: Lang) -> String {
+    let x = if x == 0.0 { 0.0 } else { x };
     let s = format!("{x:.2}");
     let s = s.trim_end_matches('0').trim_end_matches('.').to_string();
     match lang {
         Lang::En => s,
         Lang::Fr => s.replace('.', ","),
     }
+}
+
+/// Change of the rate in percentage points, on the same 2-decimal values as the JSON
+/// (no spurious "-0").
+pub fn points_delta(now: f64, before: f64) -> f64 {
+    let pts = ((a11y_report_core::num::round2(now) - a11y_report_core::num::round2(before))
+        * 100.0)
+        .round();
+    if pts == 0.0 { 0.0 } else { pts }
 }
 
 pub fn percent(rate: f64, lang: Lang) -> String {
@@ -280,5 +290,8 @@ mod tests {
         assert_eq!(number(3.1, Lang::En), "3.1");
         assert_eq!(percent(0.75, Lang::Fr), "75 %");
         assert_eq!(percent(0.666, Lang::En), "67%");
+        assert_eq!(number(-0.0, Lang::En), "0");
+        assert_eq!(points_delta(0.6667, 0.67), 0.0);
+        assert_eq!(points_delta(0.75, 0.5), 25.0);
     }
 }

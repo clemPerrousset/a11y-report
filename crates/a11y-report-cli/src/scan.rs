@@ -6,7 +6,7 @@ use a11y_report_android::manifest::{
     MANIFEST_SCHEMA, ManifestDevice, ManifestScreen, format_utc_timestamp, is_valid_screen_name,
     png_dimensions,
 };
-use a11y_report_android::project::{AndroidProject, find_adb};
+use a11y_report_android::project::{AndroidProject, find_adb, is_valid_package};
 use a11y_report_android::{
     MANIFEST_FILE, ManifestError, ParseOptions, RunManifest, parse_hierarchy,
 };
@@ -37,6 +37,8 @@ pub enum ScanError {
     InvalidName(String),
     #[error("{0}")]
     Capture(String),
+    #[error("invalid application id \"{0}\" (expected something like com.example.app)")]
+    InvalidPackage(String),
 }
 
 fn io_err(path: &Path) -> impl FnOnce(io::Error) -> ScanError + '_ {
@@ -106,6 +108,9 @@ impl Session {
             .package
             .clone()
             .or_else(|| opts.project.as_ref().and_then(|p| p.application_id.clone()));
+        if let Some(p) = package.as_deref().filter(|p| !is_valid_package(p)) {
+            return Err(ScanError::InvalidPackage(p.to_string()));
+        }
         let build = package
             .as_deref()
             .and_then(|p| adb.package_version(p))
@@ -140,10 +145,22 @@ impl Session {
             }
             manifest = Some(existing);
         } else if manifest_path.is_file() {
-            // A fresh session replaces the previous captures of this run directory only.
-            let screens = opts.run_dir.join("screens");
-            if screens.is_dir() {
-                fs::remove_dir_all(&screens).map_err(io_err(&screens))?;
+            // A fresh session replaces the previous captures: only the files listed in a
+            // valid manifest of this tool are deleted (paths are confined to the run folder).
+            let text = fs::read_to_string(&manifest_path).map_err(io_err(&manifest_path))?;
+            let previous = RunManifest::parse(&text).map_err(|e| {
+                ScanError::Capture(format!(
+                    "{} exists but is not a valid a11y-report run ({e}): choose another --out folder",
+                    manifest_path.display()
+                ))
+            })?;
+            for s in &previous.screens {
+                for rel in std::iter::once(&s.hierarchy).chain(s.screenshot.as_ref()) {
+                    let path = opts.run_dir.join(rel);
+                    if path.is_file() {
+                        fs::remove_file(&path).map_err(io_err(&path))?;
+                    }
+                }
             }
             fs::remove_file(&manifest_path).map_err(io_err(&manifest_path))?;
         }

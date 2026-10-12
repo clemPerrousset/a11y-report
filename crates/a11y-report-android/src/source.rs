@@ -133,8 +133,8 @@ fn snake_to_camel(s: &str) -> String {
 }
 
 fn collect_files(root: &Path, out: &mut Vec<PathBuf>) {
-    let mut stack = vec![root.to_path_buf()];
-    while let Some(dir) = stack.pop() {
+    let mut stack = vec![(root.to_path_buf(), false)];
+    while let Some((dir, in_sources)) = stack.pop() {
         let Ok(entries) = fs::read_dir(&dir) else {
             continue;
         };
@@ -145,8 +145,11 @@ fn collect_files(root: &Path, out: &mut Vec<PathBuf>) {
             let name = e.file_name().to_string_lossy().into_owned();
             let Ok(ft) = e.file_type() else { continue };
             if ft.is_dir() {
-                if !name.starts_with('.') && !SKIP_DIRS.contains(&name.as_str()) {
-                    stack.push(path);
+                // Inside java/ or kotlin/ source roots, `build` or `out` are package names.
+                let skipped = !in_sources && SKIP_DIRS.contains(&name.as_str());
+                if !name.starts_with('.') && !skipped {
+                    let sources = in_sources || name == "java" || name == "kotlin";
+                    stack.push((path, sources));
                 }
             } else if ft.is_file() {
                 let wanted = name.ends_with(".kt")
@@ -199,7 +202,10 @@ impl SourceIndex {
         self.files.push(rel.to_string());
         let is_xml = rel.ends_with(".xml");
         let is_strings = is_xml && rel.contains("/values") && text.contains("<string");
-        if is_strings && let Ok(doc) = roxmltree::Document::parse(text) {
+        if is_strings
+            && !crate::uiautomator::xml_too_deep(text, crate::uiautomator::MAX_XML_DEPTH)
+            && let Ok(doc) = roxmltree::Document::parse(text)
+        {
             for n in doc.descendants().filter(|n| n.has_tag_name("string")) {
                 if let (Some(name), Some(value)) = (n.attribute("name"), n.text()) {
                     let value = value.replace("\\'", "'").replace("\\\"", "\"");
@@ -304,9 +310,10 @@ impl SourceIndex {
             }
             self.push(Kind::LiteralText, &norm, &mut found);
         }
+        // Most reliable kind first; one hint per file:line.
         found.sort();
-        found.dedup_by_key(|(_, loc)| *loc);
-        found.sort();
+        let mut seen = std::collections::BTreeSet::new();
+        found.retain(|(_, loc)| seen.insert(*loc));
         found
             .into_iter()
             .take(MAX_HINTS)

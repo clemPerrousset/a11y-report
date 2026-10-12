@@ -261,7 +261,7 @@ pub fn render_html(
         .unwrap_or_else(|| l.not_available.to_string());
     let rate_delta = s.diff.as_ref().and_then(|d| {
         let (now, before) = (s.automatic_conformity_rate?, d.baseline_rate?);
-        let pts = ((now - before) * 100.0).round();
+        let pts = i18n::points_delta(now, before);
         let sign = if pts > 0.0 { "+" } else { "" };
         Some(format!(
             "{sign}{} {} {}",

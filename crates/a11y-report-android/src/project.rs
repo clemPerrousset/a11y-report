@@ -80,6 +80,9 @@ pub fn parse_local_properties_sdk_dir(text: &str) -> Option<PathBuf> {
 
 fn find_app_name(module: &Path) -> Option<String> {
     let strings = read(&module.join("src/main/res/values/strings.xml"))?;
+    if crate::uiautomator::xml_too_deep(&strings, crate::uiautomator::MAX_XML_DEPTH) {
+        return None;
+    }
     let doc = roxmltree::Document::parse(&strings).ok()?;
     doc.descendants()
         .find(|n| n.has_tag_name("string") && n.attribute("name") == Some("app_name"))
@@ -115,9 +118,12 @@ pub fn detect(root: &Path) -> Option<AndroidProject> {
     candidates.sort_by_key(|p| p.file_name().is_none_or(|n| n != "app"));
     let app_module = candidates.into_iter().next();
     let gradle = app_module.as_deref().and_then(gradle_file).map(|(_, g)| g);
-    let application_id = gradle.as_deref().and_then(|g| {
-        gradle_string_value(g, "applicationId").or_else(|| gradle_string_value(g, "namespace"))
-    });
+    let application_id = gradle
+        .as_deref()
+        .and_then(|g| {
+            gradle_string_value(g, "applicationId").or_else(|| gradle_string_value(g, "namespace"))
+        })
+        .filter(|id| is_valid_package(id));
     let version_name = gradle
         .as_deref()
         .and_then(|g| gradle_string_value(g, "versionName"));
@@ -131,6 +137,17 @@ pub fn detect(root: &Path) -> Option<AndroidProject> {
             .as_deref()
             .and_then(parse_local_properties_sdk_dir),
     })
+}
+
+/// Valid Android application id (`com.example.app`). Anything else is rejected before it
+/// reaches an `adb shell` command line.
+pub fn is_valid_package(id: &str) -> bool {
+    !id.is_empty()
+        && id.split('.').all(|part| {
+            let mut chars = part.chars();
+            chars.next().is_some_and(|c| c.is_ascii_alphabetic())
+                && chars.all(|c| c.is_ascii_alphanumeric() || c == '_')
+        })
 }
 
 fn adb_name() -> &'static str {
@@ -200,6 +217,15 @@ mod tests {
             Some("com.example.groovy")
         );
         assert_eq!(gradle_string_value(groovy, "versionName"), None);
+    }
+
+    #[test]
+    fn package_validation() {
+        assert!(is_valid_package("com.example.pocket_garden2"));
+        assert!(!is_valid_package("a; rm -rf /sdcard/*"));
+        assert!(!is_valid_package("com..app"));
+        assert!(!is_valid_package("1com.app"));
+        assert!(!is_valid_package(""));
     }
 
     #[test]

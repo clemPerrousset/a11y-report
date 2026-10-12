@@ -294,7 +294,13 @@ pub fn suggest_screen_name(activity: &str) -> String {
         }
     }
     let out = out.trim_matches('_').to_string();
-    if out.is_empty() { "screen".into() } else { out }
+    if out.is_empty() {
+        "screen".into()
+    } else if crate::manifest::is_reserved_screen_name(&out) {
+        format!("{out}_screen")
+    } else {
+        out
+    }
 }
 
 #[cfg(test)]

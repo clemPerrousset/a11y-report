@@ -15,6 +15,8 @@ pub enum ParseError {
     NegativeBounds { index: usize, value: String },
     #[error("too many nodes (more than {0})")]
     TooManyNodes(usize),
+    #[error("XML nested deeper than {0} levels")]
+    TooDeep(usize),
 }
 
 /// Screen size and optional app package used to drop other windows (status bar, keyboard).
@@ -26,6 +28,49 @@ pub struct ParseOptions {
 }
 
 const MAX_NODES: usize = 200_000;
+/// Real dumps rarely exceed 100 levels; the XML parser recurses once per level.
+pub const MAX_XML_DEPTH: usize = 256;
+
+/// True when the element nesting of `xml` exceeds `max`. A cheap scan run before handing
+/// untrusted XML to a recursive parser, so deep documents cannot overflow the stack.
+pub fn xml_too_deep(xml: &str, max: usize) -> bool {
+    let b = xml.as_bytes();
+    let mut depth = 0usize;
+    let mut i = 0;
+    while i < b.len() {
+        if b[i] != b'<' {
+            i += 1;
+            continue;
+        }
+        match b.get(i + 1) {
+            Some(b'/') => depth = depth.saturating_sub(1),
+            Some(b'?' | b'!') | None => {}
+            Some(_) => {
+                // Find the end of the tag, skipping quoted attribute values.
+                let mut j = i + 1;
+                let mut quote: Option<u8> = None;
+                while j < b.len() {
+                    match (quote, b[j]) {
+                        (None, c @ (b'"' | b'\'')) => quote = Some(c),
+                        (Some(q), c) if c == q => quote = None,
+                        (None, b'>') => break,
+                        _ => {}
+                    }
+                    j += 1;
+                }
+                if j < b.len() && b[j - 1] != b'/' {
+                    depth += 1;
+                    if depth > max {
+                        return true;
+                    }
+                }
+                i = j;
+            }
+        }
+        i += 1;
+    }
+    false
+}
 
 /// Parses `[x1,y1][x2,y2]`. Returns `None` on any syntax error.
 pub fn parse_bounds(s: &str) -> Option<Rect> {
@@ -58,6 +103,9 @@ fn is_node(n: &roxmltree::Node<'_, '_>) -> bool {
 /// Parses a dump. Nodes with an empty area once clamped to the screen are dropped with
 /// their subtree; bounds exceeding the screen are clamped and flagged.
 pub fn parse_hierarchy(name: &str, xml: &str, opts: &ParseOptions) -> Result<Screen, ParseError> {
+    if xml_too_deep(xml, MAX_XML_DEPTH) {
+        return Err(ParseError::TooDeep(MAX_XML_DEPTH));
+    }
     let doc = roxmltree::Document::parse(xml)?;
     let root = doc.root_element();
     if root.tag_name().name() != "hierarchy" {
@@ -210,6 +258,23 @@ mod tests {
     fn keeps_other_windows_without_package_filter() {
         let s = parse_hierarchy("feed", DUMP, &opts(None)).expect("parse");
         assert_eq!(s.nodes.len(), 4);
+    }
+
+    #[test]
+    fn deep_nesting_is_rejected_without_overflow() {
+        let n = 5_000;
+        let xml = format!(
+            "<hierarchy>{}{}</hierarchy>",
+            "<node bounds=\"[0,0][10,10]\">".repeat(n),
+            "</node>".repeat(n)
+        );
+        assert!(matches!(
+            parse_hierarchy("x", &xml, &opts(None)),
+            Err(ParseError::TooDeep(_))
+        ));
+        assert!(!xml_too_deep(DUMP, 10));
+        assert!(!xml_too_deep("<a><b/><c x='>'/></a>", 1));
+        assert!(xml_too_deep("<a><b><c></c></b></a>", 2));
     }
 
     #[test]

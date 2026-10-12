@@ -504,3 +504,62 @@ fn writes_all_outputs() {
         written
     );
 }
+
+#[test]
+fn diff_carries_not_rechecked_findings_across_runs() {
+    let all = synth::demo_screens().expect("draw");
+    let without_detail: Vec<SynthScreen> = synth::demo_screens()
+        .expect("draw")
+        .into_iter()
+        .filter(|s| s.name != "plant_detail")
+        .collect();
+    let (d1, d2, d3) = (
+        tempfile::tempdir().expect("tempdir"),
+        tempfile::tempdir().expect("tempdir"),
+        tempfile::tempdir().expect("tempdir"),
+    );
+    synth::write_run(d1.path(), &all, "1").expect("write");
+    synth::write_run(d2.path(), &without_detail, "2").expect("write");
+    synth::write_run(d3.path(), &synth::demo_screens().expect("draw"), "3").expect("write");
+    let r1 = analyze(&options(d1.path(), None, None))
+        .expect("analyze")
+        .report;
+    let r2 = analyze(&options(d2.path(), None, Some(r1)))
+        .expect("analyze")
+        .report;
+    assert!(!r2.not_rechecked.is_empty());
+    let r3 = analyze(&options(d3.path(), None, Some(r2)))
+        .expect("analyze")
+        .report;
+    // plant_detail is back with the same issues: they are existing, not new.
+    let detail: Vec<_> = r3
+        .issues
+        .iter()
+        .filter(|f| f.screen == "plant_detail")
+        .collect();
+    assert!(!detail.is_empty());
+    assert!(detail.iter().all(|f| f.status == Status::Existing));
+    assert!(r3.not_rechecked.is_empty() && r3.fixed.is_empty());
+}
+
+#[test]
+fn diff_does_not_call_unverified_rules_fixed() {
+    let base_dir = tempfile::tempdir().expect("tempdir");
+    demo_run(base_dir.path());
+    let base = analyze(&options(base_dir.path(), None, None))
+        .expect("analyze")
+        .report;
+    let no_png: Vec<SynthScreen> = synth::demo_screens()
+        .expect("draw")
+        .into_iter()
+        .map(|s| SynthScreen { png: None, ..s })
+        .collect();
+    let head_dir = tempfile::tempdir().expect("tempdir");
+    synth::write_run(head_dir.path(), &no_png, "2").expect("write");
+    let head = analyze(&options(head_dir.path(), None, Some(base)))
+        .expect("analyze")
+        .report;
+    assert!(head.fixed.is_empty(), "{:?}", head.fixed);
+    assert!(head.not_rechecked.iter().all(|r| r.rule == "contrast-text"));
+    assert!(!head.not_rechecked.is_empty());
+}
