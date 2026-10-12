@@ -185,18 +185,20 @@ pub fn summary_lines(report: &Report, main: &Path, lang: Lang) -> [String; 3] {
             d.baseline_build
         ));
     }
+    // "7 majeurs" in French; English adjectives do not take a plural.
+    let count = |n: u32, sev: Severity| {
+        let word = i18n::severity(sev, lang).to_lowercase();
+        let plural = lang == Lang::Fr && n > 1 && sev != Severity::Info;
+        format!("{n} {word}{}", if plural { "s" } else { "" })
+    };
     let mut issues = format!(
-        "{}{} {} {} · {} {} · {} {} · {} {}",
+        "{}{} {} · {} · {} · {}",
         l.summary_line_issues,
         l.colon,
-        s.issues.critical,
-        i18n::severity(Severity::Critical, lang).to_lowercase(),
-        s.issues.major,
-        i18n::severity(Severity::Major, lang).to_lowercase(),
-        s.issues.minor,
-        i18n::severity(Severity::Minor, lang).to_lowercase(),
-        s.issues.info,
-        i18n::severity(Severity::Info, lang).to_lowercase(),
+        count(s.issues.critical, Severity::Critical),
+        count(s.issues.major, Severity::Major),
+        count(s.issues.minor, Severity::Minor),
+        count(s.issues.info, Severity::Info),
     );
     if s.issues.ignored > 0 {
         issues.push_str(&format!(" ({} {})", s.issues.ignored, l.ignored_issues));
