@@ -1,0 +1,8 @@
+/target
+*.snap.new
+*.pending-snap
+/a11y-report/
+/a11y-demo/
+/.claude/
+.DS_Store
+*.stackdump

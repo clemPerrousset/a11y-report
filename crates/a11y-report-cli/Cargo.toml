@@ -1,0 +1,48 @@
+[package]
+name = "a11y-report-cli"
+description = "Run it at the root of an Android project: captures screens over adb and writes an accessibility report (HTML for humans, Markdown for AI agents, JSON for CI)."
+readme = "../../README.md"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[lib]
+name = "a11y_report_cli"
+path = "src/lib.rs"
+
+[[bin]]
+name = "a11y-report"
+path = "src/main.rs"
+
+[dependencies]
+a11y-report-core.workspace = true
+a11y-report-android.workspace = true
+a11y-report-rules.workspace = true
+a11y-report-render.workspace = true
+anyhow.workspace = true
+blake3.workspace = true
+clap.workspace = true
+globset.workspace = true
+image.workspace = true
+rayon.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+toml.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+[dev-dependencies]
+insta.workspace = true
+tempfile.workspace = true
+criterion.workspace = true
+
+[[bench]]
+name = "analyze"
+harness = false

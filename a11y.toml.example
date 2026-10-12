@@ -1,0 +1,20 @@
+# Copy to a11y.toml at the root of your Android project (or pass --config).
+# Every section is optional. Run `a11y-report rules` for the list of rules and parameters.
+
+[rules.target-size]
+enabled = true
+min_dp = 48        # below: minor issue (Android guideline)
+hard_min_dp = 24   # below: major issue (WCAG 2.5.8)
+
+[rules.contrast-text]
+# severity = "major"   # override the severity of this rule's findings
+
+[rules.duplicate-name]
+# enabled = false
+
+[ignore]
+# Globs on the full resource id: matching findings are kept in the JSON with
+# ignored = true, but count neither in the score nor in exit codes.
+resource_ids = ["*:id/debug_*"]
+# Accepted findings, by id (copy them from report.json or the HTML report).
+findings = []

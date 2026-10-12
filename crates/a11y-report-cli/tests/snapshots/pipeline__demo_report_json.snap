@@ -1,0 +1,988 @@
+---
+source: crates/a11y-report-cli/tests/pipeline.rs
+expression: json(&report)
+---
+{
+  "schema_version": 1,
+  "tool": {
+    "name": "a11y-report",
+    "version": "0.1.0",
+    "rules_digest": "cd297ea8",
+    "rules": [
+      {
+        "id": "missing-name",
+        "version": 1,
+        "title": "Interactive element without an accessible name",
+        "criteria": [
+          "wcag-4.1.2",
+          "wcag-1.1.1"
+        ]
+      },
+      {
+        "id": "target-size",
+        "version": 1,
+        "title": "Touch target too small",
+        "criteria": [
+          "wcag-2.5.8",
+          "android-touch-target"
+        ]
+      },
+      {
+        "id": "contrast-text",
+        "version": 1,
+        "title": "Insufficient text contrast",
+        "criteria": [
+          "wcag-1.4.3"
+        ]
+      },
+      {
+        "id": "duplicate-name",
+        "version": 1,
+        "title": "Several controls share the same name",
+        "criteria": [
+          "wcag-2.4.6"
+        ]
+      }
+    ]
+  },
+  "lang": "en",
+  "run": {
+    "app": "pocket-garden",
+    "platform": "android",
+    "build": "2.4.0 (240)",
+    "captured_at": "2026-10-12T09:30:00Z",
+    "package": "com.example.pocketgarden",
+    "device": {
+      "model": "Pixel 7",
+      "density_dpi": 420,
+      "width_px": 1080,
+      "height_px": 2400,
+      "font_scale": 1.0
+    },
+    "screens": [
+      "home",
+      "plant_detail",
+      "settings"
+    ],
+    "errors": []
+  },
+  "summary": {
+    "automatic_conformity_rate": 0.0,
+    "criteria": {
+      "applicable": 5,
+      "passed": 0,
+      "failed": 5
+    },
+    "issues": {
+      "critical": 1,
+      "major": 7,
+      "minor": 5,
+      "info": 1,
+      "ignored": 0
+    }
+  },
+  "criteria": [
+    {
+      "id": "wcag-1.1.1",
+      "reference": "WCAG 1.1.1 · EN 301 549 11.1.1.1",
+      "level": "A",
+      "title": "Non-text content",
+      "automatable": true,
+      "normative": true,
+      "status": "fail",
+      "issue_count": 1,
+      "screens_failed": [
+        "home"
+      ]
+    },
+    {
+      "id": "wcag-1.2.2",
+      "reference": "WCAG 1.2.2 · EN 301 549 11.1.2.2",
+      "level": "A",
+      "title": "Captions (prerecorded)",
+      "automatable": false,
+      "normative": true,
+      "status": "manual",
+      "issue_count": 0,
+      "screens_failed": []
+    },
+    {
+      "id": "wcag-1.3.1",
+      "reference": "WCAG 1.3.1 · EN 301 549 11.1.3.1",
+      "level": "A",
+      "title": "Info and relationships",
+      "automatable": false,
+      "normative": true,
+      "status": "manual",
+      "issue_count": 0,
+      "screens_failed": []
+    },
+    {
+      "id": "wcag-1.3.2",
+      "reference": "WCAG 1.3.2 · EN 301 549 11.1.3.2",
+      "level": "A",
+      "title": "Meaningful sequence",
+      "automatable": false,
+      "normative": true,
+      "status": "manual",
+      "issue_count": 0,
+      "screens_failed": []
+    },
+    {
+      "id": "wcag-1.3.4",
+      "reference": "WCAG 1.3.4 · EN 301 549 11.1.3.4",
+      "level": "AA",
+      "title": "Orientation",
+      "automatable": false,
+      "normative": true,
+      "status": "manual",
+      "issue_count": 0,
+      "screens_failed": []
+    },
+    {
+      "id": "wcag-1.4.1",
+      "reference": "WCAG 1.4.1 · EN 301 549 11.1.4.1",
+      "level": "A",
+      "title": "Use of color",
+      "automatable": false,
+      "normative": true,
+      "status": "manual",
+      "issue_count": 0,
+      "screens_failed": []
+    },
+    {
+      "id": "wcag-1.4.3",
+      "reference": "WCAG 1.4.3 · EN 301 549 11.1.4.3",
+      "level": "AA",
+      "title": "Contrast (minimum)",
+      "automatable": true,
+      "normative": true,
+      "status": "fail",
+      "issue_count": 5,
+      "screens_failed": [
+        "home",
+        "plant_detail"
+      ]
+    },
+    {
+      "id": "wcag-1.4.4",
+      "reference": "WCAG 1.4.4 · EN 301 549 11.1.4.4",
+      "level": "AA",
+      "title": "Resize text",
+      "automatable": false,
+      "normative": true,
+      "status": "manual",
+      "issue_count": 0,
+      "screens_failed": []
+    },
+    {
+      "id": "wcag-1.4.11",
+      "reference": "WCAG 1.4.11 · EN 301 549 11.1.4.11",
+      "level": "AA",
+      "title": "Non-text contrast",
+      "automatable": false,
+      "normative": true,
+      "status": "manual",
+      "issue_count": 0,
+      "screens_failed": []
+    },
+    {
+      "id": "wcag-2.1.1",
+      "reference": "WCAG 2.1.1 · EN 301 549 11.2.1.1",
+      "level": "A",
+      "title": "Keyboard",
+      "automatable": false,
+      "normative": true,
+      "status": "manual",
+      "issue_count": 0,
+      "screens_failed": []
+    },
+    {
+      "id": "wcag-2.2.2",
+      "reference": "WCAG 2.2.2 · EN 301 549 11.2.2.2",
+      "level": "A",
+      "title": "Pause, stop, hide",
+      "automatable": false,
+      "normative": true,
+      "status": "manual",
+      "issue_count": 0,
+      "screens_failed": []
+    },
+    {
+      "id": "wcag-2.4.3",
+      "reference": "WCAG 2.4.3 · EN 301 549 11.2.4.3",
+      "level": "A",
+      "title": "Focus order",
+      "automatable": false,
+      "normative": true,
+      "status": "manual",
+      "issue_count": 0,
+      "screens_failed": []
+    },
+    {
+      "id": "wcag-2.4.6",
+      "reference": "WCAG 2.4.6 · EN 301 549 11.2.4.6",
+      "level": "AA",
+      "title": "Headings and labels",
+      "automatable": true,
+      "normative": true,
+      "status": "fail",
+      "issue_count": 1,
+      "screens_failed": [
+        "home"
+      ]
+    },
+    {
+      "id": "wcag-2.4.7",
+      "reference": "WCAG 2.4.7 · EN 301 549 11.2.4.7",
+      "level": "AA",
+      "title": "Focus visible",
+      "automatable": false,
+      "normative": true,
+      "status": "manual",
+      "issue_count": 0,
+      "screens_failed": []
+    },
+    {
+      "id": "wcag-2.5.1",
+      "reference": "WCAG 2.5.1 · EN 301 549 11.2.5.1",
+      "level": "A",
+      "title": "Pointer gestures",
+      "automatable": false,
+      "normative": true,
+      "status": "manual",
+      "issue_count": 0,
+      "screens_failed": []
+    },
+    {
+      "id": "wcag-2.5.3",
+      "reference": "WCAG 2.5.3 · EN 301 549 11.2.5.3",
+      "level": "A",
+      "title": "Label in name",
+      "automatable": false,
+      "normative": true,
+      "status": "manual",
+      "issue_count": 0,
+      "screens_failed": []
+    },
+    {
+      "id": "wcag-2.5.8",
+      "reference": "WCAG 2.5.8",
+      "level": "AA",
+      "title": "Target size (minimum)",
+      "automatable": true,
+      "normative": true,
+      "status": "fail",
+      "issue_count": 2,
+      "screens_failed": [
+        "home",
+        "plant_detail"
+      ]
+    },
+    {
+      "id": "wcag-3.3.1",
+      "reference": "WCAG 3.3.1 · EN 301 549 11.3.3.1",
+      "level": "A",
+      "title": "Error identification",
+      "automatable": false,
+      "normative": true,
+      "status": "manual",
+      "issue_count": 0,
+      "screens_failed": []
+    },
+    {
+      "id": "wcag-3.3.2",
+      "reference": "WCAG 3.3.2 · EN 301 549 11.3.3.2",
+      "level": "A",
+      "title": "Labels or instructions",
+      "automatable": false,
+      "normative": true,
+      "status": "manual",
+      "issue_count": 0,
+      "screens_failed": []
+    },
+    {
+      "id": "wcag-4.1.2",
+      "reference": "WCAG 4.1.2 · EN 301 549 11.4.1.2",
+      "level": "A",
+      "title": "Name, role, value",
+      "automatable": true,
+      "normative": true,
+      "status": "fail",
+      "issue_count": 3,
+      "screens_failed": [
+        "home",
+        "plant_detail"
+      ]
+    },
+    {
+      "id": "wcag-4.1.3",
+      "reference": "WCAG 4.1.3 · EN 301 549 11.4.1.3",
+      "level": "AA",
+      "title": "Status messages",
+      "automatable": false,
+      "normative": true,
+      "status": "manual",
+      "issue_count": 0,
+      "screens_failed": []
+    },
+    {
+      "id": "android-touch-target",
+      "reference": "Android",
+      "level": "-",
+      "title": "Touch target size (Android 48 dp guideline)",
+      "automatable": true,
+      "normative": false,
+      "status": "fail",
+      "issue_count": 3,
+      "screens_failed": [
+        "home"
+      ]
+    }
+  ],
+  "screens": [
+    {
+      "name": "home",
+      "activity": "com.example.pocketgarden/.ui.HomeActivity",
+      "width_px": 1080,
+      "height_px": 2400,
+      "node_count": 20,
+      "interactive_count": 6,
+      "has_screenshot": true,
+      "rules_not_verified": []
+    },
+    {
+      "name": "plant_detail",
+      "activity": "com.example.pocketgarden/.ui.PlantDetailActivity",
+      "width_px": 1080,
+      "height_px": 2400,
+      "node_count": 9,
+      "interactive_count": 5,
+      "has_screenshot": true,
+      "rules_not_verified": []
+    },
+    {
+      "name": "settings",
+      "activity": "com.example.pocketgarden/.ui.SettingsActivity",
+      "width_px": 1080,
+      "height_px": 2400,
+      "node_count": 5,
+      "interactive_count": 4,
+      "has_screenshot": true,
+      "rules_not_verified": []
+    }
+  ],
+  "issues": [
+    {
+      "id": "missing-name:home:menu#0658ce6c",
+      "rule": "missing-name",
+      "severity": "critical",
+      "confidence": "high",
+      "criteria": [
+        "wcag-4.1.2",
+        "wcag-1.1.1"
+      ],
+      "screen": "home",
+      "node": 2,
+      "element": {
+        "resource_id": "menu",
+        "class": "android.widget.ImageButton",
+        "bounds": [
+          0,
+          0,
+          147,
+          147
+        ]
+      },
+      "evidence": {
+        "kind": "missing_name",
+        "element_kind": "image"
+      },
+      "status": "new",
+      "ignored": false
+    },
+    {
+      "id": "missing-name:home:search_box#a6a6d56b",
+      "rule": "missing-name",
+      "severity": "minor",
+      "confidence": "low",
+      "criteria": [
+        "wcag-4.1.2"
+      ],
+      "screen": "home",
+      "node": 4,
+      "element": {
+        "resource_id": "search_box",
+        "class": "android.widget.EditText",
+        "bounds": [
+          42,
+          179,
+          1038,
+          305
+        ]
+      },
+      "evidence": {
+        "kind": "missing_name",
+        "element_kind": "edit_text"
+      },
+      "status": "new",
+      "ignored": false
+    },
+    {
+      "id": "contrast-text:home:TextView#abc37a76",
+      "rule": "contrast-text",
+      "severity": "major",
+      "confidence": "high",
+      "criteria": [
+        "wcag-1.4.3"
+      ],
+      "screen": "home",
+      "node": 8,
+      "element": {
+        "class": "android.widget.TextView",
+        "text": "Water every 7 days",
+        "accessible_name": "Water every 7 days",
+        "bounds": [
+          74,
+          488,
+          788,
+          562
+        ]
+      },
+      "evidence": {
+        "kind": "contrast",
+        "ratio": 4.47,
+        "required": 4.5,
+        "fg": "#777777",
+        "bg": "#FFFFFF",
+        "text_height_dp": 13.97,
+        "large_text": false,
+        "background_uniformity": 1.0,
+        "suggested_fg": "#767676",
+        "suggested_ratio": 4.54
+      },
+      "status": "new",
+      "ignored": false
+    },
+    {
+      "id": "duplicate-name:home:btn_water#53d3997c",
+      "rule": "duplicate-name",
+      "severity": "minor",
+      "confidence": "medium",
+      "criteria": [
+        "wcag-2.4.6"
+      ],
+      "screen": "home",
+      "node": 9,
+      "element": {
+        "resource_id": "btn_water",
+        "class": "android.widget.Button",
+        "text": "Water",
+        "accessible_name": "Water",
+        "bounds": [
+          712,
+          609,
+          1006,
+          709
+        ]
+      },
+      "evidence": {
+        "kind": "duplicate_name",
+        "name": "Water",
+        "others": [
+          {
+            "resource_id": "btn_water",
+            "class": "android.widget.Button",
+            "text": "Water",
+            "accessible_name": "Water",
+            "bounds": [
+              712,
+              1029,
+              1006,
+              1129
+            ]
+          },
+          {
+            "resource_id": "btn_water",
+            "class": "android.widget.Button",
+            "text": "Water",
+            "accessible_name": "Water",
+            "bounds": [
+              712,
+              1449,
+              1006,
+              1549
+            ]
+          }
+        ]
+      },
+      "status": "new",
+      "ignored": false
+    },
+    {
+      "id": "target-size:home:btn_water#3b0b8572",
+      "rule": "target-size",
+      "severity": "minor",
+      "confidence": "high",
+      "criteria": [
+        "android-touch-target"
+      ],
+      "screen": "home",
+      "node": 9,
+      "element": {
+        "resource_id": "btn_water",
+        "class": "android.widget.Button",
+        "text": "Water",
+        "accessible_name": "Water",
+        "bounds": [
+          712,
+          609,
+          1006,
+          709
+        ]
+      },
+      "evidence": {
+        "kind": "target_size",
+        "width_dp": 112.0,
+        "height_dp": 38.1,
+        "min_dp": 48.0
+      },
+      "status": "new",
+      "ignored": false
+    },
+    {
+      "id": "contrast-text:home:TextView#abc37a76~2",
+      "rule": "contrast-text",
+      "severity": "major",
+      "confidence": "high",
+      "criteria": [
+        "wcag-1.4.3"
+      ],
+      "screen": "home",
+      "node": 12,
+      "element": {
+        "class": "android.widget.TextView",
+        "text": "Water every 7 days",
+        "accessible_name": "Water every 7 days",
+        "bounds": [
+          74,
+          908,
+          788,
+          982
+        ]
+      },
+      "evidence": {
+        "kind": "contrast",
+        "ratio": 4.47,
+        "required": 4.5,
+        "fg": "#777777",
+        "bg": "#FFFFFF",
+        "text_height_dp": 13.97,
+        "large_text": false,
+        "background_uniformity": 1.0,
+        "suggested_fg": "#767676",
+        "suggested_ratio": 4.54
+      },
+      "status": "new",
+      "ignored": false
+    },
+    {
+      "id": "target-size:home:btn_water#3b0b8572~2",
+      "rule": "target-size",
+      "severity": "minor",
+      "confidence": "high",
+      "criteria": [
+        "android-touch-target"
+      ],
+      "screen": "home",
+      "node": 13,
+      "element": {
+        "resource_id": "btn_water",
+        "class": "android.widget.Button",
+        "text": "Water",
+        "accessible_name": "Water",
+        "bounds": [
+          712,
+          1029,
+          1006,
+          1129
+        ]
+      },
+      "evidence": {
+        "kind": "target_size",
+        "width_dp": 112.0,
+        "height_dp": 38.1,
+        "min_dp": 48.0
+      },
+      "status": "new",
+      "ignored": false
+    },
+    {
+      "id": "contrast-text:home:TextView#abc37a76~3",
+      "rule": "contrast-text",
+      "severity": "major",
+      "confidence": "high",
+      "criteria": [
+        "wcag-1.4.3"
+      ],
+      "screen": "home",
+      "node": 16,
+      "element": {
+        "class": "android.widget.TextView",
+        "text": "Water every 7 days",
+        "accessible_name": "Water every 7 days",
+        "bounds": [
+          74,
+          1328,
+          788,
+          1402
+        ]
+      },
+      "evidence": {
+        "kind": "contrast",
+        "ratio": 4.47,
+        "required": 4.5,
+        "fg": "#777777",
+        "bg": "#FFFFFF",
+        "text_height_dp": 13.97,
+        "large_text": false,
+        "background_uniformity": 1.0,
+        "suggested_fg": "#767676",
+        "suggested_ratio": 4.54
+      },
+      "status": "new",
+      "ignored": false
+    },
+    {
+      "id": "target-size:home:btn_water#3b0b8572~3",
+      "rule": "target-size",
+      "severity": "minor",
+      "confidence": "high",
+      "criteria": [
+        "android-touch-target"
+      ],
+      "screen": "home",
+      "node": 17,
+      "element": {
+        "resource_id": "btn_water",
+        "class": "android.widget.Button",
+        "text": "Water",
+        "accessible_name": "Water",
+        "bounds": [
+          712,
+          1449,
+          1006,
+          1549
+        ]
+      },
+      "evidence": {
+        "kind": "target_size",
+        "width_dp": 112.0,
+        "height_dp": 38.1,
+        "min_dp": 48.0
+      },
+      "status": "new",
+      "ignored": false
+    },
+    {
+      "id": "contrast-text:home:seasonal_banner#fa0f569c",
+      "rule": "contrast-text",
+      "severity": "info",
+      "confidence": "low",
+      "criteria": [
+        "wcag-1.4.3"
+      ],
+      "screen": "home",
+      "node": 18,
+      "element": {
+        "resource_id": "seasonal_banner",
+        "class": "android.widget.TextView",
+        "text": "Seasonal tips",
+        "accessible_name": "Seasonal tips",
+        "bounds": [
+          21,
+          2205,
+          866,
+          2336
+        ]
+      },
+      "evidence": {
+        "kind": "contrast",
+        "ratio": 2.01,
+        "required": 4.5,
+        "fg": "#FFFFFF",
+        "bg": "#81C784",
+        "text_height_dp": 16.08,
+        "large_text": false,
+        "background_uniformity": 0.53,
+        "suggested_fg": "#474747",
+        "suggested_ratio": 4.61
+      },
+      "status": "new",
+      "ignored": false
+    },
+    {
+      "id": "target-size:home:btn_tips#2ed6ff8f",
+      "rule": "target-size",
+      "severity": "major",
+      "confidence": "high",
+      "criteria": [
+        "wcag-2.5.8"
+      ],
+      "screen": "home",
+      "node": 19,
+      "element": {
+        "resource_id": "btn_tips",
+        "class": "android.widget.ImageButton",
+        "content_desc": "Plant care tips",
+        "accessible_name": "Plant care tips",
+        "bounds": [
+          975,
+          2231,
+          1025,
+          2281
+        ]
+      },
+      "evidence": {
+        "kind": "target_size",
+        "width_dp": 19.05,
+        "height_dp": 19.05,
+        "min_dp": 24.0
+      },
+      "status": "new",
+      "ignored": false
+    },
+    {
+      "id": "contrast-text:plant_detail:plant_light#b081b77e",
+      "rule": "contrast-text",
+      "severity": "major",
+      "confidence": "high",
+      "criteria": [
+        "wcag-1.4.3"
+      ],
+      "screen": "plant_detail",
+      "node": 3,
+      "element": {
+        "resource_id": "plant_light",
+        "class": "android.widget.TextView",
+        "text": "Light: bright, indirect",
+        "accessible_name": "Light: bright, indirect",
+        "bounds": [
+          42,
+          368,
+          1038,
+          452
+        ]
+      },
+      "evidence": {
+        "kind": "contrast",
+        "ratio": 2.67,
+        "required": 4.5,
+        "fg": "#9E9E9E",
+        "bg": "#FFFFFF",
+        "text_height_dp": 13.97,
+        "large_text": false,
+        "background_uniformity": 1.0,
+        "suggested_fg": "#767676",
+        "suggested_ratio": 4.54
+      },
+      "status": "new",
+      "ignored": false
+    },
+    {
+      "id": "target-size:plant_detail:btn_delete#8838a4b4",
+      "rule": "target-size",
+      "severity": "major",
+      "confidence": "high",
+      "criteria": [
+        "wcag-2.5.8"
+      ],
+      "screen": "plant_detail",
+      "node": 7,
+      "element": {
+        "resource_id": "btn_delete",
+        "class": "android.widget.Button",
+        "text": "Delete",
+        "accessible_name": "Delete",
+        "bounds": [
+          42,
+          893,
+          341,
+          950
+        ]
+      },
+      "evidence": {
+        "kind": "target_size",
+        "width_dp": 113.9,
+        "height_dp": 21.71,
+        "min_dp": 24.0
+      },
+      "status": "new",
+      "ignored": false
+    },
+    {
+      "id": "missing-name:plant_detail:View#92d071d2",
+      "rule": "missing-name",
+      "severity": "major",
+      "confidence": "high",
+      "criteria": [
+        "wcag-4.1.2"
+      ],
+      "screen": "plant_detail",
+      "node": 8,
+      "element": {
+        "class": "android.view.View",
+        "bounds": [
+          891,
+          2211,
+          1038,
+          2358
+        ]
+      },
+      "evidence": {
+        "kind": "missing_name",
+        "element_kind": "control"
+      },
+      "status": "new",
+      "ignored": false
+    }
+  ],
+  "fixed": [],
+  "not_rechecked": [],
+  "manual_checks": [
+    {
+      "criterion": "wcag-1.1.1",
+      "reference": "WCAG 1.1.1 · EN 301 549 11.1.1.1",
+      "title": "Non-text content",
+      "why": "Non-interactive images without a description may be decorative or informative: check that informative images are described and decorative ones are hidden from TalkBack."
+    },
+    {
+      "criterion": "wcag-1.2.2",
+      "reference": "WCAG 1.2.2 · EN 301 549 11.1.2.2",
+      "title": "Captions (prerecorded)",
+      "why": "Videos with sound need synchronized captions."
+    },
+    {
+      "criterion": "wcag-1.3.1",
+      "reference": "WCAG 1.3.1 · EN 301 549 11.1.3.1",
+      "title": "Info and relationships",
+      "why": "Headings, lists and groups must be exposed semantically (e.g. heading semantics, collection info), not only visually."
+    },
+    {
+      "criterion": "wcag-1.3.2",
+      "reference": "WCAG 1.3.2 · EN 301 549 11.1.3.2",
+      "title": "Meaningful sequence",
+      "why": "Reading order depends on meaning, not only on position: swipe through the screen with TalkBack."
+    },
+    {
+      "criterion": "wcag-1.3.4",
+      "reference": "WCAG 1.3.4 · EN 301 549 11.1.3.4",
+      "title": "Orientation",
+      "why": "The app must work in portrait and landscape unless an orientation is essential."
+    },
+    {
+      "criterion": "wcag-1.4.1",
+      "reference": "WCAG 1.4.1 · EN 301 549 11.1.4.1",
+      "title": "Use of color",
+      "why": "Information must not be conveyed by colour alone (errors, states, charts)."
+    },
+    {
+      "criterion": "wcag-1.4.3",
+      "reference": "WCAG 1.4.3 · EN 301 549 11.1.4.3",
+      "title": "Contrast (minimum)",
+      "why": "Text over images or gradients is reported with low confidence and must be checked by eye."
+    },
+    {
+      "criterion": "wcag-1.4.4",
+      "reference": "WCAG 1.4.4 · EN 301 549 11.1.4.4",
+      "title": "Resize text",
+      "why": "Set the system font size to 200% and check that no text is truncated or overlapping."
+    },
+    {
+      "criterion": "wcag-1.4.11",
+      "reference": "WCAG 1.4.11 · EN 301 549 11.1.4.11",
+      "title": "Non-text contrast",
+      "why": "Icons, input borders and focus indicators need a 3:1 contrast with their surroundings."
+    },
+    {
+      "criterion": "wcag-2.1.1",
+      "reference": "WCAG 2.1.1 · EN 301 549 11.2.1.1",
+      "title": "Keyboard",
+      "why": "Every action must be reachable with an external keyboard or Switch Access."
+    },
+    {
+      "criterion": "wcag-2.2.2",
+      "reference": "WCAG 2.2.2 · EN 301 549 11.2.2.2",
+      "title": "Pause, stop, hide",
+      "why": "Carousels and animations that last more than 5 seconds must be pausable."
+    },
+    {
+      "criterion": "wcag-2.4.3",
+      "reference": "WCAG 2.4.3 · EN 301 549 11.2.4.3",
+      "title": "Focus order",
+      "why": "Focus must move in an order that preserves meaning, including after dialogs open and close."
+    },
+    {
+      "criterion": "wcag-2.4.6",
+      "reference": "WCAG 2.4.6 · EN 301 549 11.2.4.6",
+      "title": "Headings and labels",
+      "why": "Only duplicated labels are detected: whether each label describes its purpose needs human judgement."
+    },
+    {
+      "criterion": "wcag-2.4.7",
+      "reference": "WCAG 2.4.7 · EN 301 549 11.2.4.7",
+      "title": "Focus visible",
+      "why": "With a keyboard, the focused element must be visibly highlighted."
+    },
+    {
+      "criterion": "wcag-2.5.1",
+      "reference": "WCAG 2.5.1 · EN 301 549 11.2.5.1",
+      "title": "Pointer gestures",
+      "why": "Multi-finger or path-based gestures need a single-tap alternative."
+    },
+    {
+      "criterion": "wcag-2.5.3",
+      "reference": "WCAG 2.5.3 · EN 301 549 11.2.5.3",
+      "title": "Label in name",
+      "why": "The accessible name must contain the visible label (voice control users say what they see)."
+    },
+    {
+      "criterion": "wcag-2.5.8",
+      "reference": "WCAG 2.5.8",
+      "title": "Target size (minimum)",
+      "why": "The spacing exception (small targets far enough from others) is not evaluated."
+    },
+    {
+      "criterion": "wcag-3.3.1",
+      "reference": "WCAG 3.3.1 · EN 301 549 11.3.3.1",
+      "title": "Error identification",
+      "why": "Form errors must be described in text and announced to TalkBack."
+    },
+    {
+      "criterion": "wcag-3.3.2",
+      "reference": "WCAG 3.3.2 · EN 301 549 11.3.3.2",
+      "title": "Labels or instructions",
+      "why": "Input fields need a persistent label, not only a placeholder that disappears."
+    },
+    {
+      "criterion": "wcag-4.1.2",
+      "reference": "WCAG 4.1.2 · EN 301 549 11.4.1.2",
+      "title": "Name, role, value",
+      "why": "Roles and states (selected, expanded, checked) must be checked with TalkBack."
+    },
+    {
+      "criterion": "wcag-4.1.3",
+      "reference": "WCAG 4.1.3 · EN 301 549 11.4.1.3",
+      "title": "Status messages",
+      "why": "Snackbars, toasts and loading states must be announced without moving focus."
+    }
+  ],
+  "known_limitations": [
+    "WCAG 2.5.8: the spacing exception is not evaluated.",
+    "Contrast: bold text cannot be detected, so the 14 pt bold large-text rule is not applied.",
+    "Contrast: text over images or gradients is reported with low confidence and never fails a criterion.",
+    "Missing names on text fields have low confidence: hint and labelFor are not visible in uiautomator dumps.",
+    "Only captured screens are audited; screens that were not captured are not checked.",
+    "EN 301 549 references use the chapter 11 clause matching each WCAG criterion."
+  ]
+}

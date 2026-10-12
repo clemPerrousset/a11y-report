@@ -1,0 +1,23 @@
+[package]
+name = "a11y-report-core"
+description = "Data model, rule trait, criteria catalog, fingerprints and diff for the a11y-report accessibility engine (no I/O)."
+readme = "../../README.md"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+serde.workspace = true
+schemars.workspace = true
+blake3.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+proptest.workspace = true

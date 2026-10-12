@@ -1,0 +1,420 @@
+//! Per-screen Markdown briefs for AI coding agents (`ai/README.md` + `ai/<screen>.md`).
+
+use crate::guidance;
+use crate::i18n::{self, number, percent};
+use a11y_report_core::report::Report;
+use a11y_report_core::{Evidence, Finding, Lang, Severity};
+use std::collections::BTreeMap;
+use std::fmt::Write as _;
+
+/// One generated file: path relative to the `ai/` folder, and content.
+pub struct MdFile {
+    pub path: String,
+    pub content: String,
+}
+
+fn w(out: &mut String, s: impl AsRef<str>) {
+    out.push_str(s.as_ref());
+    out.push('\n');
+}
+
+fn md_escape_inline(s: &str) -> String {
+    s.replace('|', "\\|").replace('\n', " ")
+}
+
+fn evidence_lines(f: &Finding, lang: Lang) -> Vec<String> {
+    match &f.evidence {
+        Evidence::MissingName { element_kind } => {
+            vec![format!(
+                "element_kind: `{}`",
+                match element_kind {
+                    a11y_report_core::finding::MissingNameKind::Image => "image",
+                    a11y_report_core::finding::MissingNameKind::EditText => "edit_text",
+                    a11y_report_core::finding::MissingNameKind::Control => "control",
+                }
+            )]
+        }
+        Evidence::TargetSize {
+            width_dp,
+            height_dp,
+            min_dp,
+        } => vec![format!(
+            "size: {} × {} dp, minimum {} dp",
+            number(*width_dp, Lang::En),
+            number(*height_dp, Lang::En),
+            number(*min_dp, Lang::En)
+        )],
+        Evidence::Contrast {
+            ratio,
+            required,
+            fg,
+            bg,
+            text_height_dp,
+            large_text,
+            background_uniformity,
+            suggested_fg,
+            suggested_ratio,
+        } => {
+            let mut v = vec![
+                format!(
+                    "ratio: {}:1 (required {}:1)",
+                    number(*ratio, Lang::En),
+                    number(*required, Lang::En)
+                ),
+                format!("text colour: `{fg}` on background `{bg}`"),
+                format!(
+                    "estimated text height: {} dp{}",
+                    number(*text_height_dp, Lang::En),
+                    if *large_text { " (large text)" } else { "" }
+                ),
+                format!(
+                    "background uniformity: {}",
+                    number(*background_uniformity, Lang::En)
+                ),
+            ];
+            if let (Some(s), Some(r)) = (suggested_fg, suggested_ratio) {
+                v.push(format!(
+                    "suggested text colour: `{s}` (ratio {}:1)",
+                    number(*r, Lang::En)
+                ));
+            }
+            let _ = lang;
+            v
+        }
+        Evidence::DuplicateName { name, others } => {
+            let mut v = vec![format!("shared name: \"{name}\"")];
+            for o in others {
+                v.push(format!(
+                    "also on: {} bounds {:?}",
+                    guidance::element(o),
+                    o.bounds.as_array()
+                ));
+            }
+            v
+        }
+    }
+}
+
+fn screen_file(report: &Report, screen: &str, screenshot: Option<&str>, lang: Lang) -> String {
+    let mut out = String::new();
+    let titles: BTreeMap<&str, &str> = report
+        .tool
+        .rules
+        .iter()
+        .map(|r| (r.id.as_str(), r.title.as_str()))
+        .collect();
+    let info = report.screens.iter().find(|s| s.name == screen);
+    let issues: Vec<&Finding> = report
+        .issues
+        .iter()
+        .filter(|f| f.screen == screen)
+        .collect();
+    let open: Vec<&&Finding> = issues.iter().filter(|f| !f.ignored).collect();
+
+    w(
+        &mut out,
+        format!("# {} `{screen}`", lang.pick("Screen", "Écran")),
+    );
+    w(&mut out, "");
+    w(
+        &mut out,
+        format!("- app: {} {}", report.run.app, report.run.build),
+    );
+    if let Some(a) = info.and_then(|i| i.activity.as_deref()) {
+        w(&mut out, format!("- activity: `{a}`"));
+    }
+    if let Some(i) = info {
+        w(
+            &mut out,
+            format!(
+                "- screen size: {}×{} px, density {} dpi (dp = px × 160 / {})",
+                i.width_px,
+                i.height_px,
+                report.run.device.density_dpi,
+                report.run.device.density_dpi
+            ),
+        );
+        if !i.rules_not_verified.is_empty() {
+            w(
+                &mut out,
+                format!(
+                    "- not verified (no screenshot): {}",
+                    i.rules_not_verified.join(", ")
+                ),
+            );
+        }
+    }
+    if let Some(p) = screenshot {
+        w(&mut out, format!("- screenshot: [{p}]({p})"));
+    }
+    w(&mut out, format!("- open issues: {}", open.len()));
+    w(&mut out, "");
+    if issues.is_empty() {
+        w(
+            &mut out,
+            lang.pick(
+                "No automatic issue on this screen.",
+                "Aucun problème automatique sur cet écran.",
+            ),
+        );
+        return out;
+    }
+    w(&mut out, format!("## {}", lang.pick("Issues", "Problèmes")));
+    for (n, f) in issues.iter().enumerate() {
+        w(&mut out, "");
+        let title = titles.get(f.rule.as_str()).copied().unwrap_or(&f.rule);
+        w(
+            &mut out,
+            format!("### {}. [{}] {} — {title}", n + 1, f.severity, f.rule),
+        );
+        w(&mut out, "");
+        w(&mut out, format!("- id: `{}`", f.id));
+        w(
+            &mut out,
+            format!(
+                "- severity: {} · confidence: {} · status: {}{}",
+                f.severity,
+                f.confidence.as_str(),
+                match f.status {
+                    a11y_report_core::Status::New => "new",
+                    a11y_report_core::Status::Existing => "existing",
+                },
+                if f.ignored {
+                    " · IGNORED (accepted in a11y.toml, do not fix)"
+                } else {
+                    ""
+                }
+            ),
+        );
+        w(&mut out, format!("- criteria: {}", f.criteria.join(", ")));
+        let e = &f.element;
+        let mut el = format!("- element: `{}`", e.class);
+        if let Some(id) = &e.resource_id {
+            let _ = write!(el, ", resource-id `{id}`");
+        }
+        if let Some(t) = &e.text {
+            let _ = write!(el, ", text \"{}\"", md_escape_inline(t));
+        }
+        if let Some(d) = &e.content_desc {
+            let _ = write!(el, ", content-desc \"{}\"", md_escape_inline(d));
+        }
+        if let Some(a) = &e.accessible_name {
+            let _ = write!(el, ", accessible name \"{}\"", md_escape_inline(a));
+        }
+        let _ = write!(el, ", bounds {:?} px", e.bounds.as_array());
+        w(&mut out, el);
+        w(&mut out, "- evidence:");
+        for line in evidence_lines(f, lang) {
+            w(&mut out, format!("  - {line}"));
+        }
+        if f.source_hints.is_empty() {
+            w(&mut out, format!("- likely source: {}", lang.pick(
+                "not found automatically — search the layout or composable rendering this element (use the resource-id, text or activity above).",
+                "non trouvée automatiquement — chercher le layout ou le composable qui affiche cet élément (resource-id, texte ou activité ci-dessus).",
+            )));
+        } else {
+            w(&mut out, "- likely source:");
+            for h in &f.source_hints {
+                w(
+                    &mut out,
+                    format!(
+                        "  - `{}:{}` ({}) — `{}`",
+                        h.file,
+                        h.line,
+                        h.matched_by,
+                        h.snippet.replace('`', "'")
+                    ),
+                );
+            }
+        }
+        w(&mut out, format!("- fix: {}", guidance::fix(f, lang)));
+        w(
+            &mut out,
+            format!("- done when: {}", guidance::done_when(f, lang)),
+        );
+    }
+    out
+}
+
+fn readme(report: &Report, files: &[(String, String)], lang: Lang) -> String {
+    let mut out = String::new();
+    let s = &report.summary;
+    w(
+        &mut out,
+        format!(
+            "# {} — {} {}",
+            lang.pick(
+                "Accessibility fix brief",
+                "Fiche de correction d'accessibilité"
+            ),
+            report.run.app,
+            report.run.build
+        ),
+    );
+    w(&mut out, "");
+    w(
+        &mut out,
+        format!(
+            "{} {} {} (`report.json`, schema v{}). {}",
+            lang.pick("Generated by", "Généré par"),
+            report.tool.name,
+            report.tool.version,
+            report.schema_version,
+            lang.pick(
+                "Do not edit: re-run the tool instead.",
+                "Ne pas modifier : relancer l'outil."
+            ),
+        ),
+    );
+    w(&mut out, "");
+    w(
+        &mut out,
+        format!(
+            "## {}",
+            lang.pick(
+                "Instructions for AI coding agents",
+                "Consignes pour les agents IA"
+            )
+        ),
+    );
+    w(&mut out, "");
+    for line in [
+        lang.pick("One file per captured screen. Each issue gives: the element, the measured evidence, the likely source location, the fix, and the acceptance test.", "Un fichier par écran capturé. Chaque problème donne : l'élément, la mesure, l'emplacement probable dans le code, la correction et le test d'acceptation."),
+        lang.pick("Fix in this order: critical, then major, then minor. Treat `info` and `confidence: low` issues as \"check by eye\", not as mandatory changes.", "Corriger dans cet ordre : critique, puis majeur, puis mineur. Traiter les problèmes `info` et `confidence: low` comme « à vérifier à l'œil », pas comme des changements obligatoires."),
+        lang.pick("Skip issues marked IGNORED: they were accepted in `a11y.toml`.", "Ignorer les problèmes marqués IGNORED : ils ont été acceptés dans `a11y.toml`."),
+        lang.pick("Prefer fixing shared code (theme colours, styles, reusable composables, list item layouts) over patching each occurrence; one fix often resolves several ids.", "Préférer corriger le code partagé (couleurs du thème, styles, composables réutilisables, layouts d'éléments de liste) plutôt que chaque occurrence ; une correction résout souvent plusieurs identifiants."),
+        lang.pick("Put every new label in `strings.xml` (and its translations); never hard-code user-visible text.", "Mettre chaque nouveau libellé dans `strings.xml` (et ses traductions) ; ne jamais coder un texte visible en dur."),
+        lang.pick("Do not change behaviour or visual design beyond what the fix needs.", "Ne pas changer le comportement ni le design au-delà de ce que la correction exige."),
+        lang.pick("Issue ids are stable across builds: after fixing, re-capture the screen and re-run `a11y-report`; a fixed issue moves to the \"fixed\" list.", "Les identifiants sont stables d'un build à l'autre : après correction, recapturer l'écran et relancer `a11y-report` ; un problème corrigé passe dans la liste « corrigés »."),
+    ] {
+        w(&mut out, format!("- {line}"));
+    }
+    w(&mut out, "");
+    w(&mut out, format!("## {}", lang.pick("Summary", "Résumé")));
+    w(&mut out, "");
+    w(
+        &mut out,
+        format!(
+            "- {}: {}",
+            i18n::labels(lang).rate_label,
+            s.automatic_conformity_rate
+                .map(|r| percent(r, lang))
+                .unwrap_or_else(|| "n/a".into())
+        ),
+    );
+    w(
+        &mut out,
+        format!(
+            "- open issues: {} critical, {} major, {} minor, {} info ({} ignored)",
+            s.issues.critical, s.issues.major, s.issues.minor, s.issues.info, s.issues.ignored
+        ),
+    );
+    if let Some(d) = &s.diff {
+        w(
+            &mut out,
+            format!(
+                "- vs {}: {} new, {} existing, {} fixed, {} not rechecked",
+                d.baseline_build, d.new, d.existing, d.fixed, d.not_rechecked
+            ),
+        );
+    }
+    w(&mut out, "");
+    w(&mut out, format!("## {}", lang.pick("Screens", "Écrans")));
+    w(&mut out, "");
+    w(
+        &mut out,
+        "| screen | activity | critical | major | minor | info | brief |",
+    );
+    w(&mut out, "|---|---|---:|---:|---:|---:|---|");
+    for sc in &report.screens {
+        let count = |sev: Severity| {
+            report
+                .issues
+                .iter()
+                .filter(|f| f.screen == sc.name && !f.ignored && f.severity == sev)
+                .count()
+        };
+        let file = files
+            .iter()
+            .find(|(n, _)| n == &sc.name)
+            .map(|(_, f)| f.as_str())
+            .unwrap_or("");
+        w(
+            &mut out,
+            format!(
+                "| `{}` | {} | {} | {} | {} | {} | [{file}]({file}) |",
+                sc.name,
+                sc.activity
+                    .as_deref()
+                    .map(|a| format!("`{a}`"))
+                    .unwrap_or_default(),
+                count(Severity::Critical),
+                count(Severity::Major),
+                count(Severity::Minor),
+                count(Severity::Info),
+            ),
+        );
+    }
+    w(&mut out, "");
+    w(
+        &mut out,
+        format!(
+            "## {}",
+            lang.pick("Fix recipes by rule", "Recettes de correction par règle")
+        ),
+    );
+    for r in &report.tool.rules {
+        w(&mut out, "");
+        w(&mut out, format!("### `{}` — {}", r.id, r.title));
+        w(&mut out, "");
+        w(&mut out, guidance::recipe(&r.id, lang));
+    }
+    if !report.manual_checks.is_empty() {
+        w(&mut out, "");
+        w(
+            &mut out,
+            format!(
+                "## {}",
+                lang.pick(
+                    "Not covered by this report (manual checks)",
+                    "Non couvert par ce rapport (vérifications manuelles)"
+                )
+            ),
+        );
+        w(&mut out, "");
+        for m in &report.manual_checks {
+            w(
+                &mut out,
+                format!("- {} — {}: {}", m.reference, m.title, m.why),
+            );
+        }
+    }
+    out
+}
+
+/// Renders `README.md` and one brief per analysed screen. `screenshots` maps a screen
+/// name to a link usable from the `ai/` folder.
+pub fn render_ai_briefs(report: &Report, screenshots: &BTreeMap<String, String>) -> Vec<MdFile> {
+    let lang = report.lang;
+    let files: Vec<(String, String)> = report
+        .screens
+        .iter()
+        .map(|s| (s.name.clone(), format!("{}.md", s.name)))
+        .collect();
+    let mut out = vec![MdFile {
+        path: "README.md".into(),
+        content: readme(report, &files, lang),
+    }];
+    for (name, file) in &files {
+        out.push(MdFile {
+            path: file.clone(),
+            content: screen_file(
+                report,
+                name,
+                screenshots.get(name).map(String::as_str),
+                lang,
+            ),
+        });
+    }
+    out
+}

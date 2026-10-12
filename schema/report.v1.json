@@ -1,0 +1,881 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "a11y-report report",
+  "description": "Automatic accessibility audit of a mobile app.",
+  "type": "object",
+  "properties": {
+    "criteria": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/CriterionResult"
+      }
+    },
+    "fixed": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/FindingRef"
+      }
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Finding"
+      }
+    },
+    "known_limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "lang": {
+      "description": "Language of the human-readable strings in this report.",
+      "$ref": "#/$defs/Lang"
+    },
+    "manual_checks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ManualCheck"
+      }
+    },
+    "not_rechecked": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/FindingRef"
+      }
+    },
+    "run": {
+      "$ref": "#/$defs/RunInfo"
+    },
+    "schema_version": {
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0
+    },
+    "screens": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ScreenSummary"
+      }
+    },
+    "summary": {
+      "$ref": "#/$defs/Summary"
+    },
+    "tool": {
+      "$ref": "#/$defs/ToolInfo"
+    }
+  },
+  "required": [
+    "schema_version",
+    "tool",
+    "lang",
+    "run",
+    "summary",
+    "criteria",
+    "screens",
+    "issues",
+    "fixed",
+    "not_rechecked",
+    "manual_checks",
+    "known_limitations"
+  ],
+  "$defs": {
+    "Confidence": {
+      "type": "string",
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ]
+    },
+    "CriteriaCounts": {
+      "type": "object",
+      "properties": {
+        "applicable": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "passed": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "applicable",
+        "passed",
+        "failed"
+      ]
+    },
+    "CriterionResult": {
+      "type": "object",
+      "properties": {
+        "automatable": {
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string"
+        },
+        "issue_count": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "level": {
+          "type": "string"
+        },
+        "normative": {
+          "type": "boolean"
+        },
+        "reference": {
+          "description": "e.g. `WCAG 1.4.3 · EN 301 549 11.1.4.3`.",
+          "type": "string"
+        },
+        "screens_failed": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "$ref": "#/$defs/CriterionStatus"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "reference",
+        "level",
+        "title",
+        "automatable",
+        "normative",
+        "status",
+        "issue_count",
+        "screens_failed"
+      ]
+    },
+    "CriterionStatus": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "fail",
+        "not_applicable",
+        "manual"
+      ]
+    },
+    "Device": {
+      "description": "Capture device characteristics.",
+      "type": "object",
+      "properties": {
+        "density_dpi": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "font_scale": {
+          "type": "number",
+          "format": "double"
+        },
+        "height_px": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "model": {
+          "type": "string"
+        },
+        "width_px": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "model",
+        "density_dpi",
+        "width_px",
+        "height_px",
+        "font_scale"
+      ]
+    },
+    "DiffSummary": {
+      "type": "object",
+      "properties": {
+        "baseline_build": {
+          "type": "string"
+        },
+        "baseline_rate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
+        },
+        "existing": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "fixed": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "new": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "not_rechecked": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "rules_digest_changed": {
+          "description": "The baseline was produced with different rules or configuration.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "baseline_build",
+        "new",
+        "existing",
+        "fixed",
+        "not_rechecked",
+        "rules_digest_changed"
+      ]
+    },
+    "ElementRef": {
+      "description": "Identifies the element a finding is about, for humans and agents.",
+      "type": "object",
+      "properties": {
+        "accessible_name": {
+          "description": "Accessible name as TalkBack would announce it (normalized).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "bounds": {
+          "$ref": "#/$defs/Rect"
+        },
+        "class": {
+          "type": "string"
+        },
+        "content_desc": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "resource_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "text": {
+          "description": "Visible text, truncated to 80 characters.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "class",
+        "bounds"
+      ]
+    },
+    "Evidence": {
+      "description": "Measured proof attached to every finding.",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "element_kind": {
+              "$ref": "#/$defs/MissingNameKind"
+            },
+            "kind": {
+              "type": "string",
+              "const": "missing_name"
+            }
+          },
+          "required": [
+            "kind",
+            "element_kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "height_dp": {
+              "type": "number",
+              "format": "double"
+            },
+            "kind": {
+              "type": "string",
+              "const": "target_size"
+            },
+            "min_dp": {
+              "type": "number",
+              "format": "double"
+            },
+            "width_dp": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          "required": [
+            "kind",
+            "width_dp",
+            "height_dp",
+            "min_dp"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "background_uniformity": {
+              "description": "Share of the border ring covered by the background colour (0–1).",
+              "type": "number",
+              "format": "double"
+            },
+            "bg": {
+              "$ref": "#/$defs/Rgb"
+            },
+            "fg": {
+              "$ref": "#/$defs/Rgb"
+            },
+            "kind": {
+              "type": "string",
+              "const": "contrast"
+            },
+            "large_text": {
+              "type": "boolean"
+            },
+            "ratio": {
+              "description": "Measured ratio, truncated (not rounded) to 2 decimals.",
+              "type": "number",
+              "format": "double"
+            },
+            "required": {
+              "type": "number",
+              "format": "double"
+            },
+            "suggested_fg": {
+              "description": "Nearest text colour (same hue, adjusted lightness) that meets `required`.",
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Rgb"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "suggested_ratio": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "text_height_dp": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          "required": [
+            "kind",
+            "ratio",
+            "required",
+            "fg",
+            "bg",
+            "text_height_dp",
+            "large_text",
+            "background_uniformity"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "duplicate_name"
+            },
+            "name": {
+              "type": "string"
+            },
+            "others": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ElementRef"
+              }
+            }
+          },
+          "required": [
+            "kind",
+            "name",
+            "others"
+          ]
+        }
+      ]
+    },
+    "Finding": {
+      "type": "object",
+      "properties": {
+        "confidence": {
+          "$ref": "#/$defs/Confidence"
+        },
+        "criteria": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "element": {
+          "$ref": "#/$defs/ElementRef"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        },
+        "id": {
+          "description": "Stable fingerprint `{rule}:{screen}:{label}#{hash}`.",
+          "type": "string"
+        },
+        "ignored": {
+          "type": "boolean"
+        },
+        "node": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "rule": {
+          "type": "string"
+        },
+        "screen": {
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/Severity"
+        },
+        "source_hints": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SourceHint"
+          }
+        },
+        "status": {
+          "$ref": "#/$defs/Status"
+        }
+      },
+      "required": [
+        "id",
+        "rule",
+        "severity",
+        "confidence",
+        "criteria",
+        "screen",
+        "node",
+        "element",
+        "evidence",
+        "status",
+        "ignored"
+      ]
+    },
+    "FindingRef": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "rule": {
+          "type": "string"
+        },
+        "screen": {
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/Severity"
+        }
+      },
+      "required": [
+        "id",
+        "rule",
+        "screen",
+        "severity"
+      ]
+    },
+    "IssueCounts": {
+      "description": "Open (non-ignored) issues by severity, plus the ignored ones.",
+      "type": "object",
+      "properties": {
+        "critical": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "ignored": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "info": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "major": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "minor": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "critical",
+        "major",
+        "minor",
+        "info",
+        "ignored"
+      ]
+    },
+    "Lang": {
+      "description": "Output language of human-readable strings.",
+      "type": "string",
+      "enum": [
+        "en",
+        "fr"
+      ]
+    },
+    "ManualCheck": {
+      "type": "object",
+      "properties": {
+        "criterion": {
+          "type": "string"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "why": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "criterion",
+        "reference",
+        "title",
+        "why"
+      ]
+    },
+    "MissingNameKind": {
+      "oneOf": [
+        {
+          "description": "ImageView / ImageButton without description.",
+          "type": "string",
+          "const": "image"
+        },
+        {
+          "description": "EditText: a hint or labelFor may exist but is not visible in the dump.",
+          "type": "string",
+          "const": "edit_text"
+        },
+        {
+          "description": "Any other interactive element.",
+          "type": "string",
+          "const": "control"
+        }
+      ]
+    },
+    "NodeId": {
+      "description": "Index of a node in [`Screen::nodes`] (depth-first order of the XML dump).",
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0
+    },
+    "Rect": {
+      "description": "Bounds in physical pixels: [x1, y1, x2, y2].",
+      "type": "array",
+      "items": {
+        "type": "integer"
+      },
+      "maxItems": 4,
+      "minItems": 4
+    },
+    "Rgb": {
+      "type": "string",
+      "pattern": "^#[0-9A-F]{6}$"
+    },
+    "RuleInfo": {
+      "type": "object",
+      "properties": {
+        "criteria": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "title",
+        "criteria"
+      ]
+    },
+    "RunError": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "screen": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "message"
+      ]
+    },
+    "RunInfo": {
+      "type": "object",
+      "properties": {
+        "app": {
+          "type": "string"
+        },
+        "build": {
+          "type": "string"
+        },
+        "captured_at": {
+          "description": "Copied from the run manifest; the engine never generates timestamps.",
+          "type": "string"
+        },
+        "device": {
+          "$ref": "#/$defs/Device"
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RunError"
+          }
+        },
+        "package": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "platform": {
+          "type": "string"
+        },
+        "screens": {
+          "description": "Successfully analysed screens, sorted by name.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "app",
+        "platform",
+        "build",
+        "captured_at",
+        "device",
+        "screens",
+        "errors"
+      ]
+    },
+    "ScreenSummary": {
+      "type": "object",
+      "properties": {
+        "activity": {
+          "description": "Foreground activity at capture time, when known.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "has_screenshot": {
+          "type": "boolean"
+        },
+        "height_px": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "interactive_count": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "name": {
+          "type": "string"
+        },
+        "node_count": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "rules_not_verified": {
+          "description": "Rules that need a screenshot and could not run on this screen.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "width_px": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "name",
+        "width_px",
+        "height_px",
+        "node_count",
+        "interactive_count",
+        "has_screenshot",
+        "rules_not_verified"
+      ]
+    },
+    "Severity": {
+      "description": "Ordered from most to least severe (`Critical < Info` in `Ord`).",
+      "type": "string",
+      "enum": [
+        "critical",
+        "major",
+        "minor",
+        "info"
+      ]
+    },
+    "SourceHint": {
+      "description": "Pointer to the project source that probably declares the element.",
+      "type": "object",
+      "properties": {
+        "file": {
+          "description": "Path relative to the project root, with `/` separators.",
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "matched_by": {
+          "description": "How the match was found (`layout_id`, `compose_test_tag`, `string_resource`, …).",
+          "type": "string"
+        },
+        "snippet": {
+          "description": "The matching line, trimmed.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "file",
+        "line",
+        "matched_by",
+        "snippet"
+      ]
+    },
+    "Status": {
+      "description": "Lifecycle of a finding relative to the baseline.",
+      "type": "string",
+      "enum": [
+        "new",
+        "existing"
+      ]
+    },
+    "Summary": {
+      "type": "object",
+      "properties": {
+        "automatic_conformity_rate": {
+          "description": "Share of applicable automatable criteria that pass (0–1). `null` when none applies.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
+        },
+        "criteria": {
+          "$ref": "#/$defs/CriteriaCounts"
+        },
+        "diff": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DiffSummary"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "issues": {
+          "$ref": "#/$defs/IssueCounts"
+        }
+      },
+      "required": [
+        "criteria",
+        "issues"
+      ]
+    },
+    "ToolInfo": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "rules": {
+          "description": "Active rules, in execution order.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RuleInfo"
+          }
+        },
+        "rules_digest": {
+          "description": "Hash of rule ids, rule versions and effective configuration.",
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "rules_digest",
+        "rules"
+      ]
+    }
+  }
+}

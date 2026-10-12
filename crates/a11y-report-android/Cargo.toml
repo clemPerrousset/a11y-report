@@ -1,0 +1,24 @@
+[package]
+name = "a11y-report-android"
+description = "Android input layer of a11y-report: uiautomator dump parser, run manifest, adb capture, Gradle project detection and source hints."
+readme = "../../README.md"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+a11y-report-core.workspace = true
+roxmltree.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

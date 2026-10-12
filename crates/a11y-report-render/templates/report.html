@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="{{ lang }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="{{ version }}">
+<title>{{ l.report_title }} · {{ app }} {{ build }}</title>
+<style>
+:root {
+  --bg: #f6f7f9; --surface: #ffffff; --text: #1a1d23; --muted: #4a5160; --border: #d5d9e0;
+  --link: #1d4ed8; --focus: #1d4ed8;
+  --critical: #991b1b; --major: #9a3412; --minor: #854d0e; --info: #374151;
+  --pass: #166534; --fail: #991b1b; --na: #4b5563; --manual: #1e3a8a;
+  --mark-critical: #dc2626; --mark-major: #ea580c; --mark-minor: #ca8a04; --mark-info: #6b7280;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1218; --surface: #181c24; --text: #e8eaee; --muted: #b3b9c5; --border: #343a46;
+    --link: #93b4ff; --focus: #93b4ff;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+a { color: var(--link); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.skip { position: absolute; left: -9999px; top: 0; background: var(--surface); padding: .5rem 1rem; }
+.skip:focus { left: 1rem; top: 1rem; z-index: 10; }
+header.top, main { max-width: 72rem; margin: 0 auto; padding: 1.5rem 1rem; }
+header.top { padding-bottom: .5rem; }
+h1 { font-size: 1.9rem; margin: 0 0 .75rem; line-height: 1.2; }
+h2 { font-size: 1.45rem; margin: 2.5rem 0 1rem; padding-bottom: .35rem; border-bottom: 2px solid var(--border); }
+h3 { font-size: 1.2rem; margin: 1.5rem 0 .75rem; }
+h4 { font-size: 1.05rem; margin: 0 0 .5rem; display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.meta { display: flex; flex-wrap: wrap; gap: .25rem 1.5rem; margin: 0; padding: 0; list-style: none; color: var(--muted); }
+.meta strong { color: var(--text); }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 1rem; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: .6rem; padding: 1rem 1.25rem; }
+.card .label { margin: 0; color: var(--muted); font-size: .95rem; }
+.card .value { margin: .25rem 0 0; font-size: 2.1rem; font-weight: 700; line-height: 1.1; }
+.card .sub { margin: .35rem 0 0; color: var(--muted); font-size: .9rem; }
+.sev-list { display: flex; flex-wrap: wrap; gap: .4rem; margin: .5rem 0 0; padding: 0; list-style: none; }
+.badge { display: inline-block; padding: .1rem .55rem; border-radius: 1rem; color: #fff; font-size: .85rem; font-weight: 600; white-space: nowrap; }
+.badge.critical { background: var(--critical); } .badge.major { background: var(--major); }
+.badge.minor { background: var(--minor); } .badge.info { background: var(--info); }
+.badge.pass { background: var(--pass); } .badge.fail { background: var(--fail); }
+.badge.na { background: var(--na); } .badge.manual { background: var(--manual); }
+.badge.plain { background: transparent; color: var(--muted); border: 1px solid var(--border); font-weight: 500; }
+.note { color: var(--muted); font-size: .95rem; }
+.alert { border-left: 4px solid var(--major); background: var(--surface); padding: .75rem 1rem; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); }
+caption { text-align: left; color: var(--muted); padding: .5rem 0; caption-side: top; }
+th, td { padding: .55rem .75rem; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+thead th { font-size: .9rem; color: var(--muted); }
+td.num, th.num { text-align: right; }
+.screen { background: var(--surface); border: 1px solid var(--border); border-radius: .6rem; padding: 1rem 1.25rem; margin: 1.25rem 0; }
+.screen h3 { margin-top: 0; }
+.screen-body { display: grid; grid-template-columns: minmax(0, 22.5rem) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+.shot { margin: 0; position: sticky; top: 1rem; }
+.shot svg { width: 100%; height: auto; display: block; border: 1px solid var(--border); border-radius: .4rem; background: #fff; }
+.shot figcaption { color: var(--muted); font-size: .85rem; margin-top: .4rem; }
+.mark rect { fill: none; }
+.mark text { fill: #fff; font-weight: 700; font-family: system-ui, sans-serif; }
+.mark.critical rect { stroke: var(--mark-critical); } .mark.critical circle { fill: var(--critical); }
+.mark.major rect { stroke: var(--mark-major); } .mark.major circle { fill: var(--major); }
+.mark.minor rect { stroke: var(--mark-minor); } .mark.minor circle { fill: var(--minor); }
+.mark.info rect { stroke: var(--mark-info); } .mark.info circle { fill: var(--info); }
+.issues { list-style: none; margin: 0; padding: 0; display: grid; gap: .9rem; }
+.issue { border: 1px solid var(--border); border-radius: .5rem; padding: .8rem 1rem; }
+.issue.ignored { opacity: .75; border-style: dashed; }
+.issue .n { display: inline-flex; justify-content: center; align-items: center; min-width: 1.7rem; height: 1.7rem; border-radius: 50%; background: var(--text); color: var(--surface); font-size: .9rem; }
+dl.facts { display: grid; grid-template-columns: max-content 1fr; gap: .3rem 1rem; margin: .5rem 0 0; }
+dl.facts dt { color: var(--muted); font-weight: 600; }
+dl.facts dd { margin: 0; overflow-wrap: anywhere; }
+code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: .88em; }
+.swatches { display: flex; flex-wrap: wrap; gap: .75rem; margin: 0; padding: 0; list-style: none; }
+.swatch { display: inline-block; width: 1rem; height: 1rem; border: 1px solid var(--muted); border-radius: .2rem; vertical-align: -.15rem; margin-right: .3rem; }
+ul.plain { padding-left: 1.2rem; }
+footer { max-width: 72rem; margin: 0 auto; padding: 1rem; color: var(--muted); font-size: .9rem; }
+@media (max-width: 52rem) { .screen-body { grid-template-columns: 1fr; } .shot { position: static; max-width: 22.5rem; } }
+@media print {
+  :root { --bg: #fff; --surface: #fff; --text: #000; --muted: #333; --border: #999; }
+  body { font-size: 11pt; }
+  .skip { display: none; }
+  .shot { position: static; }
+  .screen, .issue, tr { break-inside: avoid; }
+  h2 { break-after: avoid; }
+  a { color: #000; text-decoration: none; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#summary">{{ l.skip_link }}</a>
+<header class="top">
+  <h1>{{ l.report_title }} — {{ app }}</h1>
+  <ul class="meta">
+    <li><strong>{{ l.build }}</strong> {{ build }}</li>
+    <li><strong>{{ l.captured_at }}</strong> <time datetime="{{ captured_at }}">{{ captured_at }}</time></li>
+    <li><strong>{{ l.device }}</strong> {{ device }}</li>
+    <li><strong>{{ l.screens }}</strong> {{ screen_count }}</li>
+  </ul>
+</header>
+<main>
+<section aria-labelledby="summary">
+  <h2 id="summary" tabindex="-1">{{ l.summary_heading }}</h2>
+  <div class="cards">
+    <div class="card">
+      <p class="label">{{ l.rate_label }}</p>
+      <p class="value">{{ rate }}</p>
+      {% if let Some(delta) = rate_delta %}<p class="sub">{{ delta }}</p>{% endif %}
+    </div>
+    <div class="card">
+      <p class="label">{{ l.open_issues }}</p>
+      <p class="value">{{ open_total }}</p>
+      <ul class="sev-list">
+        {% for c in counts %}<li><span class="badge {{ c.class }}">{{ c.label }}{{ l.colon }} {{ c.n }}</span></li>{% endfor %}
+      </ul>
+      {% if ignored > 0 %}<p class="sub">+ {{ ignored }} {{ l.ignored_issues }}</p>{% endif %}
+    </div>
+    {% if let Some(n) = new_count %}
+    <div class="card">
+      <p class="label">{{ l.new_issues }}</p>
+      <p class="value">{{ n }}</p>
+    </div>
+    {% endif %}
+    {% if let Some(n) = fixed_count %}
+    <div class="card">
+      <p class="label">{{ l.fixed_issues }}</p>
+      <p class="value">{{ n }}</p>
+    </div>
+    {% endif %}
+  </div>
+  <p class="note">{{ l.rate_note }}</p>
+  {% if digest_changed %}<p class="alert">{{ l.digest_changed }}</p>{% endif %}
+  <p class="note">{{ l.ai_note }}</p>
+
+  {% if !rule_rows.is_empty() %}
+  <h3>{{ l.by_rule_heading }}</h3>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th scope="col">{{ l.col_problem }}</th><th scope="col">{{ l.col_severity }}</th><th scope="col" class="num">{{ l.col_open }}</th><th scope="col" class="num">{{ l.col_screens }}</th></tr></thead>
+    <tbody>
+    {% for r in rule_rows %}
+      <tr><th scope="row">{{ r.title }}</th><td><span class="badge {{ r.severity_class }}">{{ r.severity_label }}</span></td><td class="num">{{ r.open }}</td><td class="num">{{ r.screens }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+</section>
+
+<section aria-labelledby="criteria">
+  <h2 id="criteria">{{ l.criteria_heading }}</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th scope="col">{{ l.col_reference }}</th><th scope="col">{{ l.col_criterion }}</th><th scope="col">{{ l.col_level }}</th><th scope="col">{{ l.col_status }}</th><th scope="col" class="num">{{ l.col_issues }}</th></tr></thead>
+    <tbody>
+    {% for c in criteria %}
+      <tr>
+        <td>{{ c.reference }}</td>
+        <th scope="row">{{ c.title }}{% if !c.normative %} <span class="badge plain">{{ l.non_normative }}</span>{% endif %}</th>
+        <td>{{ c.level }}</td>
+        <td><span class="badge {{ c.status_class }}">{{ c.status_label }}</span></td>
+        <td class="num">{{ c.issues }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+{% if !errors.is_empty() %}
+<section aria-labelledby="errors">
+  <h2 id="errors">{{ l.errors_heading }}</h2>
+  <ul class="plain">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+<section aria-labelledby="screens">
+  <h2 id="screens">{{ l.screens_heading }}</h2>
+  {% for s in screens %}
+  <section class="screen" aria-labelledby="{{ s.anchor }}">
+    <h3 id="{{ s.anchor }}">{{ s.name }} <span class="badge plain">{{ s.open }} {{ l.open_issues|lower }}</span></h3>
+    {% if let Some(a) = s.activity %}<p class="note">{{ l.activity }}{{ l.colon }} <code>{{ a }}</code></p>{% endif %}
+    {% if let Some(nv) = s.not_verified %}<p class="note">{{ l.rules_not_verified }}{{ l.colon }} {{ nv }}</p>{% endif %}
+    <div class="screen-body">
+      {% if let Some(f) = s.figure %}
+      <figure class="shot">
+        <svg viewBox="0 0 {{ f.width }} {{ f.height }}" role="img" aria-labelledby="cap-{{ s.anchor }}" preserveAspectRatio="xMidYMid meet">
+          <image href="{{ f.data_uri }}" x="0" y="0" width="{{ f.width }}" height="{{ f.height }}"/>
+          {% for m in f.marks %}
+          <g class="mark {{ m.class }}" aria-hidden="true">
+            <rect x="{{ m.x }}" y="{{ m.y }}" width="{{ m.w }}" height="{{ m.h }}" stroke-width="{{ f.stroke }}"/>
+            <circle cx="{{ m.cx }}" cy="{{ m.cy }}" r="{{ f.radius }}"/>
+            <text x="{{ m.cx }}" y="{{ m.cy }}" font-size="{{ f.font }}" text-anchor="middle" dominant-baseline="central">{{ m.n }}</text>
+          </g>
+          {% endfor %}
+        </svg>
+        <figcaption id="cap-{{ s.anchor }}">{{ s.name }} — {{ l.screenshot_caption }}</figcaption>
+      </figure>
+      {% else %}
+      <p class="note">{{ l.no_screenshot }}</p>
+      {% endif %}
+      <div>
+        {% if s.issues.is_empty() %}
+        <p>{{ l.no_issue_on_screen }}</p>
+        {% else %}
+        <ol class="issues">
+        {% for i in s.issues %}
+          <li>
+          <article class="issue{% if i.ignored %} ignored{% endif %}" id="{{ i.anchor }}" aria-labelledby="{{ i.anchor }}-t">
+            <h4 id="{{ i.anchor }}-t"><span class="n" aria-hidden="true">{{ i.n }}</span> {{ i.title }}
+              <span class="badge {{ i.severity_class }}">{{ i.severity_label }}</span>
+              <span class="badge plain">{{ l.confidence }} {{ i.confidence }}</span>
+              <span class="badge plain">{{ i.status }}</span>
+              {% if i.ignored %}<span class="badge plain">{{ l.ignored }}</span>{% endif %}
+            </h4>
+            <dl class="facts">
+              <dt>{{ l.element }}</dt><dd>{{ i.element }}</dd>
+              <dt>{{ l.measure }}</dt><dd>{{ i.measure }}
+                {% if !i.swatches.is_empty() %}
+                <ul class="swatches">{% for sw in i.swatches %}<li><span class="swatch" style="background: {{ sw.hex }}"></span>{{ sw.label }} <code>{{ sw.hex }}</code></li>{% endfor %}</ul>
+                {% endif %}
+              </dd>
+              <dt>{{ l.fix }}</dt><dd>{{ i.fix }}</dd>
+              <dt>{{ l.done_when }}</dt><dd>{{ i.done_when }}</dd>
+              {% if !i.sources.is_empty() %}
+              <dt>{{ l.likely_source }}</dt><dd><ul class="plain">{% for src in i.sources %}<li><code>{{ src }}</code></li>{% endfor %}</ul></dd>
+              {% endif %}
+              <dt>{{ l.issue_id }}</dt><dd><code>{{ i.id }}</code></dd>
+            </dl>
+          </article>
+          </li>
+        {% endfor %}
+        </ol>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+  {% endfor %}
+</section>
+
+<section aria-labelledby="fixed">
+  <h2 id="fixed">{{ l.fixed_heading }}</h2>
+  {% if !has_baseline %}
+  <p>{{ l.no_baseline }}</p>
+  {% else if fixed.is_empty() %}
+  <p>{{ l.nothing_fixed }}</p>
+  {% else %}
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th scope="col">{{ l.col_problem }}</th><th scope="col">{{ l.screens }}</th><th scope="col">{{ l.col_severity }}</th><th scope="col">{{ l.issue_id }}</th></tr></thead>
+    <tbody>
+    {% for r in fixed %}<tr><th scope="row">{{ r.title }}</th><td>{{ r.screen }}</td><td><span class="badge {{ r.severity_class }}">{{ r.severity_label }}</span></td><td><code>{{ r.id }}</code></td></tr>{% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+  {% if !not_rechecked.is_empty() %}
+  <h3>{{ l.not_rechecked_heading }}</h3>
+  <ul class="plain">{% for r in not_rechecked %}<li>{{ r.title }} — {{ r.screen }} — <code>{{ r.id }}</code></li>{% endfor %}</ul>
+  {% endif %}
+</section>
+
+<section aria-labelledby="manual">
+  <h2 id="manual">{{ l.manual_heading }}</h2>
+  <p>{{ l.manual_intro }}</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th scope="col">{{ l.col_reference }}</th><th scope="col">{{ l.col_criterion }}</th><th scope="col">{{ l.fix }}</th></tr></thead>
+    <tbody>
+    {% for m in manual %}<tr><td>{{ m.reference }}</td><th scope="row">{{ m.title }}</th><td>{{ m.why }}</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <h3>{{ l.limitations_heading }}</h3>
+  <ul class="plain">{% for x in limitations %}<li>{{ x }}</li>{% endfor %}</ul>
+</section>
+
+<section aria-labelledby="method">
+  <h2 id="method">{{ l.method_heading }}</h2>
+  <p>{{ l.method_automated }}</p>
+  <p>{{ l.method_not_automated }}</p>
+  <h3>{{ l.method_rules }}</h3>
+  <ul class="plain">{% for r in rules %}<li><code>{{ r.id }}</code> v{{ r.version }} — {{ r.title }}</li>{% endfor %}</ul>
+  <p>{{ l.engine_version }}{{ l.colon }} <code>{{ version }}</code> · {{ l.rules_digest }}{{ l.colon }} <code>{{ digest }}</code></p>
+</section>
+</main>
+<footer><p>{{ version }}</p></footer>
+</body>
+</html>
